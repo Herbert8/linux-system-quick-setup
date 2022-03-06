@@ -1,0 +1,15 @@
+bat
+brook
+croc
+dive
+docker-compose
+exa
+fd
+fzf
+gost
+grv
+hexyl
+lf
+rg
+webdav
+yq
