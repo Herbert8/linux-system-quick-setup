@@ -1,4 +1,6 @@
 #!/bin/bash
 
-tar --exclude=.DS_Store -zcvf system_setup.tar.gz *
+tar --exclude=.DS_Store \
+    --exclude=package.sh \
+    -zcvf system_setup.tar.gz *
 

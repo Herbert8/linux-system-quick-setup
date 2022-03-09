@@ -1,0 +1,12 @@
+#!/bin/bash
+
+
+# 获取 shell 脚本绝对路径
+base_dir () { (cd "$(dirname "${BASH_SOURCE[0]}")"; pwd;) }
+readonly BASE_DIR=$(base_dir)
+
+
+# 安装基础组件 *******************************************************************
+sudo yum install -y "$BASE_DIR"/packages/*.rpm "$BASE_DIR"/packages/**/*.rpm
+
+
