@@ -5,7 +5,10 @@
 base_dir () { (cd "$(dirname "${BASH_SOURCE[0]}")"; pwd;) }
 readonly BASE_DIR=$(base_dir)
 
-# exit
+if [[ "Linux" != "$(uname)" ]]; then
+    echo OS must be Linux.
+    exit 1
+fi
 
 # 安装基础配置 *******************************************************************
 ITEM_TAG_ARRAY[1]=1
@@ -49,7 +52,7 @@ install_portable_tools () {
 }
 
 install_docker_binary () {
-    /bin/bash "$BASE_DIR/docker/install_docker_binary.sh $BASE_DIR/docker/docker-20.10.9.tgz"
+    /bin/bash "$BASE_DIR/docker/install_docker_binary.sh" "$BASE_DIR/docker/docker-20.10.9.tgz"
 }
 
 # 申请 sudo 权限
@@ -68,7 +71,7 @@ for tag in ${ITEM_TAG_ARRAY[@]}; do
 done
 
 
-user_input=$(echo "$item_list" | xargs dialog --stdout --title "Function List" \
+user_input=$(echo "$item_list" | xargs dialog --stdout --title "System Configuration Menu" \
                 --backtitle "System Initialization" \
                 --checklist "Select the function item you need:" 13 60 6)
 
@@ -83,7 +86,7 @@ if [[ "0" -ne "$?" ]]; then
 fi
 
 clear
-for i in ${user_input_array[@]}; do
-    echo "${ITEM_CMD_ARRAY[$i]}"
+for user_selected_item in ${user_input_array[@]}; do
+    ${ITEM_CMD_ARRAY[$user_selected_item]}
 done
 
