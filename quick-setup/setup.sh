@@ -1,4 +1,4 @@
-#!/bin/bash
+#!bash
 
 
 # 获取 shell 脚本绝对路径
@@ -40,50 +40,43 @@ ITEM_STATUS_ARRAY[4]='off'
 # functions
 
 install_config () {
-    /bin/bash "$BASE_DIR/config/install_config.sh"
+    bash "$BASE_DIR/config/install_config.sh"
 }
 
 install_common_package () {
-    /bin/bash "$BASE_DIR/common/install_common_package.sh"
+    bash "$BASE_DIR/common/install_common_package.sh"
 }
 
 install_portable_tools () {
-    /bin/bash "$BASE_DIR/tools/install_portable_tools.sh"
+    bash "$BASE_DIR/tools/install_portable_tools.sh"
 }
 
 install_docker_binary () {
-    /bin/bash "$BASE_DIR/docker/install_docker_binary.sh" "$BASE_DIR/docker/docker-20.10.9.tgz"
+    bash "$BASE_DIR/docker/install_docker_binary.sh" "$BASE_DIR/docker/docker-20.10.9.tgz"
 }
 
-# 申请 sudo 权限
-sudo command
-
-# 测试 dialog 是否存在
-which dialog > /dev/null 2>&1
-# 不存在则安装
-if [[ "0" -ne "$?" ]]; then
-    sudo yum install -y "$BASE_DIR"/sub_scripts/dialog*.rpm > /dev/null
-fi
 
 # 遍历所有的命令项，生成菜单参数
 for tag in ${ITEM_TAG_ARRAY[@]}; do
     item_list="${item_list} ${tag} '${ITEM_DESC_ARRAY[${tag}]}' '${ITEM_STATUS_ARRAY[${tag}]}' "
 done
 
-
-user_input=$(echo "$item_list" | xargs dialog --stdout --title "System Configuration Menu" \
+export LD_LIBRARY_PATH="$(base_dir)"
+user_input=$(echo "$item_list" | xargs "$(base_dir)/dialog" --stdout --title "System Configuration Menu" \
                 --backtitle "System Initialization" \
                 --checklist "Select the function item you need:" 13 60 6)
 
-# 解析用户输入
-user_input_array=($user_input)
-
+dialog_ret="$?"
 # 用户取消输入则退出
-if [[ "0" -ne "$?" ]]; then
+if [[ "0" -ne "dialog_ret" ]]; then
     clear
     echo "User cancels the operation."
     exit 1
 fi
+
+# 解析用户输入
+user_input_array=($user_input)
+
 
 clear
 for user_selected_item in ${user_input_array[@]}; do

@@ -1,5 +1,11 @@
 
 
+if [[ -n "$GLOBAL_TAG_OUTPUT_UTILS" ]]; then
+    return
+fi
+
+GLOBAL_TAG_OUTPUT_UTILS=100
+
 # 定义基本颜色值
 readonly TEXT_RESET_ALL_ATTRIBUTES=0
 readonly TEXT_BOLD_BRIGHT=1
@@ -39,3 +45,4 @@ print_dim_plain () {
 print_without_scroll_screen () {
     while read line; do echo -ne "\033[1K\r\033[2m$line"; done; echo -e "\033[0m"
 }
+

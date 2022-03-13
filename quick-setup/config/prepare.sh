@@ -5,7 +5,7 @@
 readonly BASE_DIR=$(dirname $(readlink -f "${BASH_SOURCE[0]}"))
 
 # 加载输出相关函数
-. "$BASE_DIR/../sub_scripts/output_utils.sh"
+source "$BASE_DIR/../sub_scripts/output_utils.sh"
 
 
 # 选择数据根路径
@@ -13,9 +13,9 @@ storage_mount_point=$(dialog --stdout --title "Data Storage Mount Point" \
                         --backtitle 'System Initialization' \
                         --dselect "/" 12 60)
 
-
+dialog_ret="$?"
 # 用户取消输入则退出
-if [[ "0" -ne "$?" ]]; then
+if [[ "0" -ne "$dialog_ret" ]]; then
     clear
     echo "User cancels the operation."
     exit 1
@@ -37,8 +37,9 @@ form_input=$(dialog --stdout --title "Setup System Information" \
                 "User Name:"       1  2  "${field_user_name}"        1  19  50  0  \
                 "Docker Group ID:" 3  2  "${field_docker_group_id}"  3  19  50  0)
 
+dialog_ret="$?"
 # 用户取消输入则退出
-if [[ "0" -ne "$?" ]]; then
+if [[ "0" -ne "$dialog_ret" ]]; then
     clear
     echo "User cancels the operation."
     exit 1

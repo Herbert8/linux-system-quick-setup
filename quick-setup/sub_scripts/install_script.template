@@ -1,50 +1,12 @@
 #!/bin/bash
 
-alias debug='echo'
 
-base_dir () { (cd "$(dirname "${BASH_SOURCE[0]}")"; pwd;) }
-
-script_file="$(base_dir)/${BASH_SOURCE[0]}"
+readonly scripts='<SCRIPTS_PLACEHOLDER>'
 
 
-get_line_index () {
-    grep -n -- "^$1$" | awk -F : '{ print $1 }'
-}
+eval "$(echo "$scripts" | base64 -d)"
 
-
-print_without_scroll_screen () {
-    while read line; do echo -ne "\033[1K\r\033[2m$line"; done; echo -e "\033[0m"
-}
-
-
-tmp_dir=$(mktemp -d)
-
-
-
-debug ">>>>>>>>>>>>>>>>>>>>>$script_file"
-# cat "$script_file" | extract_block 'System Setup Package' > b.txt
-
-start_line=$(cat "$script_file" | get_line_index '-----BEGIN SYSTEM SETUP PACKAGE-----')
-end_line=$(cat "$script_file" | get_line_index '-----END SYSTEM SETUP PACKAGE-----')
-
-debug $start_line start_line
-debug $end_line end_line
-
-start_line=$(expr $start_line + 1)
-end_line=$(expr $end_line - 1)
-
-debug $start_line start_line
-debug $end_line end_line
-
-debug '<<<<<<<<<<<<<<<<<<<<<'
-# cat "$script_file" | extract_block 'System Setup Package' | base64 -d > z.tar.gz
-# cat "$script_file" | extract_block 'System Setup Package' | base64 -d | tar -zxvf - -C "$tmp_dir"
-
-# /bin/bash "$tmp_dir/setup.sh"
-
-cat "$script_file" | sed -n "${start_line},${end_line}p" | base64 -d | tar -zxvf - -C "$tmp_dir" | print_without_scroll_screen
-
-bash "$tmp_dir/setup.sh"
 
 exit
+
 
