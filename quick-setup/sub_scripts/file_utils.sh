@@ -43,17 +43,8 @@ get_line_index () {
 }
 
 # 根据内容 起始、结束 的标记，提取内容
-# extract_block () {
-#     local original_content=$(cat -)
-
-#     local start_line=$(echo $"$original_content" | get_line_index "-----BEGIN ${1^^}-----")
-#     local end_line=$(echo $"$original_content" | get_line_index "-----END ${1^^}-----")
-
-#     start_line=$(expr $start_line + 1)
-#     end_line=$(expr $end_line - 1)
-
-#     echo $"$original_content" | sed -n "${start_line},${end_line}p"
-# }
+# $1 块名
+# $2 从哪个文件提取
 extract_block () {
 
     local start_line=$(cat "$2" | get_line_index "-----BEGIN ${1^^}-----")
@@ -69,10 +60,19 @@ extract_block () {
 
 
 # 从 Bash 脚本中，根据内容 起始、结束 的标记，提取内容，然后去掉行首，Base64 反编码，得到原始内容
+# $1 块名
+# $2 从哪个文件提取
 extract_block_from_bash_script () {
     extract_block "$1" "$2" | sed 's/[# ]//g' | base64 -d
 }
 
+tar_files_in_directory () {
+    if [[ -d "$1" ]]; then
+        (cd "$1"; tar zcvf - *)
+    else
+        >&2 echo "The 'tar' command failed to execute. Directory '$1' does not exist."
+    fi
+}
 
 clear_invalid_line () {
     sed '/^[ \t]*#/d' \

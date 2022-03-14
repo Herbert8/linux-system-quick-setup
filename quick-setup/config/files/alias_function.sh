@@ -25,7 +25,8 @@ unproxy () {
 }
 
 whichex () {
-    readlink -f $(which "$1")
+    local full_path=$(which "$1")
+    readlink -f "$full_path"
 }
 
 # 计算本地时间比标准时间（百度时间）“快”多少
@@ -55,6 +56,6 @@ fast_time () {
 
 # 以百度时间为基准进行时间同步
 sync_date () {
-    sudo date -s "$(curl -H 'Cache-Control: no-cache' -sI baidu.com | grep '^Date:' | cut -d' ' -f3-6)Z"
+    sudo echo -ne && sudo date -s "$(curl -H 'Cache-Control: no-cache' -sI baidu.com | grep '^Date:' | cut -d' ' -f3-6)Z"
 }
 

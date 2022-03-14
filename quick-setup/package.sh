@@ -48,12 +48,31 @@ installer_template="${installer_template//<SCRIPTS_PLACEHOLDER>/${scripts_base64
 echo "$installer_template" > "$installer_package"
 
 # 将 Dialog 组件 存入安装器
-# cat "$(base_dir)/sub_scripts/dialog.rpm" | data_to_block_in_bash_script 'Dialog' >> "$installer_package"
-(cd "$(base_dir)/sub_scripts/dialog"; tar zcvf - dialog libdialog.so.11) \
-                    | data_to_block_in_bash_script 'Dialog' \
-                    >> "$installer_package"
+tar_files_in_directory "$(base_dir)/sub_scripts/dialog" \
+                        | data_to_block_in_bash_script 'Dialog' \
+                        >> "$installer_package"
 
-tar_files | data_to_block_in_bash_script 'System Setup Package' >> "$installer_package"
+# tar common 目录
+tar_files_in_directory "$(base_dir)/common" \
+                        | data_to_block_in_bash_script 'Common' \
+                        >> "$installer_package"
+
+# tar config 目录
+tar_files_in_directory "$(base_dir)/config" \
+                        | data_to_block_in_bash_script 'Config' \
+                        >> "$installer_package"
+
+# tar docker 目录
+tar_files_in_directory "$(base_dir)/docker" \
+                        | data_to_block_in_bash_script 'Docker' \
+                        >> "$installer_package"
+
+# tar tools 目录
+tar_files_in_directory "$(base_dir)/tools" \
+                        | data_to_block_in_bash_script 'Portable Tools' \
+                        >> "$installer_package"
+
+# tar_files | data_to_block_in_bash_script 'System Setup Package' >> "$installer_package"
 
 server_str='bahb@192.168.200.99'
 server_path='/home/bahb/tmp/'
