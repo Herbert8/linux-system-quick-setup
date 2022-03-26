@@ -106,3 +106,20 @@ sudo yum install -y *.rpm
 ```
 
 4. 创建 Service
+
+
+
+### 创建用户组
+
+### 按是否使用 Docker 区分安装方式
+
+源码编译
+
+- Nginx
+- Redis
+
+
+
+开箱即用
+
+- MinIO

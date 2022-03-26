@@ -2,8 +2,8 @@
 
 
 # 获取 shell 脚本绝对路径
-base_dir () { (cd "$(dirname "${BASH_SOURCE[0]}")"; pwd;) }
-readonly BASE_DIR=$(base_dir)
+base_dir () { dirname "${BASH_SOURCE[0]}"; }
+BASE_DIR=$(base_dir)
 
 
 # 安装基础组件 *******************************************************************

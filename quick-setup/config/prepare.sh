@@ -2,7 +2,8 @@
 
 
 # 获取 shell 脚本绝对路径
-readonly BASE_DIR=$(dirname $(readlink -f "${BASH_SOURCE[0]}"))
+ BASE_DIR=$(dirname "${BASH_SOURCE[0]}")
+ readonly BASE_DIR
 
 # 加载输出相关函数
 source "$BASE_DIR/../sub_scripts/output_utils.sh"
@@ -46,8 +47,7 @@ if [[ "0" -ne "$dialog_ret" ]]; then
 fi
 
 # 输入的表单信息放入熟组
-IFS=$'\n'
-form_input_array=($form_input)
+IFS=$'\n' read -ra form_input_array <<< "$form_input"
 
 # 表单信息拆分到变量
 field_user_name="${form_input_array[0]}"
@@ -74,7 +74,7 @@ EOF
 echo
 # 确认信息大写
 typeset -u user_choice
-read -p 'Is this ok [y/N]: ' user_choice
+read -rp 'Is this ok [y/N]: ' user_choice
 # 去掉无用空格
 user_choice=$(echo "$user_choice" | xargs)
 
@@ -126,7 +126,7 @@ EOF
 # 提示用户确认信息
 # 确认信息大写
 typeset -u user_choice
-read -p 'Are you sure you want to execute these commands [y/N]: ' user_choice
+read -rp 'Are you sure you want to execute these commands [y/N]: ' user_choice
 # 去掉无用空格
 user_choice=$(echo "$user_choice" | xargs)
 

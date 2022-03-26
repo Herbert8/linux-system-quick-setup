@@ -18,8 +18,9 @@ readonly STYLE_TITLE_IMPORTANT="\033[${TEXT_RESET_ALL_ATTRIBUTES}m\033[${TEXT_BO
 readonly STYLE_NORMAL_IMPORTANT="\033[${TEXT_RESET_ALL_ATTRIBUTES}m\033[${COLOR_F_LIGHT_RED}m"
 
 # 获取 shell 脚本绝对路径
-base_dir () { (cd "$(dirname "${BASH_SOURCE[0]}")"; pwd;) }
-readonly BASE_DIR=$(base_dir)
+base_dir () { dirname "${BASH_SOURCE[0]}"; }
+BASE_DIR=$(base_dir)
+readonly BASE_DIR
 
 install_docker_binary () {
 

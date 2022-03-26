@@ -1,6 +1,13 @@
 #!/bin/bash
 
 
+# 判断系统是否为 RUEL7 或者 CentOS7
+if ! uname -a | grep el7 &>/dev/null; then
+    >&2 echo 'OS must be RHEL7 or CentOS7.'
+    exit 1
+fi
+
+
 readonly scripts='<SCRIPTS_PLACEHOLDER>'
 
 

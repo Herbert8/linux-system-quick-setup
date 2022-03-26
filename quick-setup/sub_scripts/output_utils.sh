@@ -43,6 +43,6 @@ print_dim_plain () {
 }
 
 print_without_scroll_screen () {
-    while read line; do echo -ne "\033[1K\r\033[2m$line"; done; echo -e "\033[0m"
+    while read -r line; do echo -ne "\033[1K\r\033[2m$line"; done; echo -e "\033[0m"
 }
 

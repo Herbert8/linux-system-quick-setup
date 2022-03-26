@@ -10,11 +10,14 @@ get_network_ip () {
 select_network_menu () {
 
     # 获取所有网络接口
-    local network_devices=$(ip link | grep -E '^[0-9]' | awk -F ': ' '{print $2}')
+    local network_devices
+    network_devices=$(ip link | grep -E '^[0-9]' | awk -F ': ' '{print $2}')
 
     # 遍历网络接口，获取对应 IP
-    local net_device_list=$(for device in $network_devices; do
-        local ip=$(get_network_ip $device)
+    local net_device_list
+    net_device_list=$(for device in $network_devices; do
+        local ip
+        ip=$(get_network_ip "$device")
         if [[ "lo" == "$device" ]]; then
             continue
         fi

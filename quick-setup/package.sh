@@ -2,14 +2,15 @@
 
 
 # 获取 shell 脚本绝对路径
-base_dir () { (cd "$(dirname "${BASH_SOURCE[0]}")"; pwd;) }
+base_dir () { dirname "${BASH_SOURCE[0]}"; }
 
 # 引入文件相关功能
 source "$(base_dir)/sub_scripts/file_utils.sh"
 
 # 要生成的安装包名称
 readonly package_basename='install.sh'
-readonly installer_package="$(base_dir)/$package_basename"
+installer_package="$(base_dir)/$package_basename"
+readonly installer_package
 
 # 打包
 tar_files () {
@@ -19,14 +20,11 @@ tar_files () {
         --exclude=sub_scripts \
         --exclude=test \
         --exclude="$package_basename" \
-        -zcvf - *
+        -zcv -- *
 }
 
 # --exclude=docker \
 # --exclude=tools \
-
-# 获得 安装脚本文件模板 的位置
-readonly install_script_template="$(base_dir)/sub_scripts/install_script.template"
 
 # 将所有需要的脚本整合成一个字符串
 scripts_str=$(cat "$(base_dir)/sub_scripts/file_utils.sh" \
@@ -40,39 +38,35 @@ scripts_str=$(echo "$scripts_str" | clear_invalid_line)
 scripts_base64=$(echo "$scripts_str" | base64)
 
 # 将模板读入字符串变量
-installer_template=$(cat "$(base_dir)/sub_scripts/install_script.template")
+installer_template=$(clear_invalid_line < "$(base_dir)/sub_scripts/install_script.template")
 # 使用前面 脚本字符串的 Base64 编码 替换模板中的占位符
 installer_template="${installer_template//<SCRIPTS_PLACEHOLDER>/${scripts_base64}}"
 
-# 将替换后的模板 生产 安装器
-echo "$installer_template" > "$installer_package"
+{
+    # 将替换后的模板 生产 安装器
+    echo "$installer_template"
 
-# 将 Dialog 组件 存入安装器
-tar_files_in_directory "$(base_dir)/sub_scripts/dialog" \
-                        | data_to_block_in_bash_script 'Dialog' \
-                        >> "$installer_package"
+    # 将 Dialog 组件 存入安装器
+    tar_files_in_directory "$(base_dir)/sub_scripts/dialog" \
+                            | data_to_block_in_bash_script 'Dialog'
 
-# tar common 目录
-tar_files_in_directory "$(base_dir)/common" \
-                        | data_to_block_in_bash_script 'Common' \
-                        >> "$installer_package"
+    # tar common 目录
+    tar_files_in_directory "$(base_dir)/common" \
+                            | data_to_block_in_bash_script 'Common'
 
-# tar config 目录
-tar_files_in_directory "$(base_dir)/config" \
-                        | data_to_block_in_bash_script 'Config' \
-                        >> "$installer_package"
+    # tar config 目录
+    tar_files_in_directory "$(base_dir)/config" \
+                            | data_to_block_in_bash_script 'Config'
 
-# tar docker 目录
-tar_files_in_directory "$(base_dir)/docker" \
-                        | data_to_block_in_bash_script 'Docker' \
-                        >> "$installer_package"
+    # tar docker 目录
+    tar_files_in_directory "$(base_dir)/docker" \
+                            | data_to_block_in_bash_script 'Docker'
 
-# tar tools 目录
-tar_files_in_directory "$(base_dir)/tools" \
-                        | data_to_block_in_bash_script 'Portable Tools' \
-                        >> "$installer_package"
+    # tar tools 目录
+    tar_files_in_directory "$(base_dir)/tools" \
+                            | data_to_block_in_bash_script 'Portable Tools'
+} > "$installer_package"
 
-# tar_files | data_to_block_in_bash_script 'System Setup Package' >> "$installer_package"
 
 server_str='bahb@192.168.200.99'
 server_path='/home/bahb/tmp/'

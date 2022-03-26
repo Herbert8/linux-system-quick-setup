@@ -1,6 +1,12 @@
 
-alias ll='exa -Fghl --time-style=long-iso --group-directories-first --color-scale'
-alias lla='exa -aFghl --time-style=long-iso --group-directories-first --color-scale'
+
+
+which exa &>/dev/null && {
+    alias ll='exa -Fghl --time-style=long-iso --group-directories-first --color-scale'
+    alias lla='exa -aFghl --time-style=long-iso --group-directories-first --color-scale'
+}
+
+
 
 mount_rhel_disc () {
     local media_path='/media/rhel-cdrom'
@@ -25,37 +31,59 @@ unproxy () {
 }
 
 whichex () {
-    local full_path=$(which "$1")
+    local full_path
+    full_path=$(which "$1")
     readlink -f "$full_path"
 }
 
-# 计算本地时间比标准时间（百度时间）“快”多少
-fast_time () {
-    # 访问百度获取头信息
+# 计算本地时间比指定 Web 服务器“快”多少
+time_diff () {
+    # 指定获取标准时间的 Web 服务器
+    local web_server
+    # 如果不指定则使用百度服务器作为基准时间
+    web_server=${1:-'http://baidu.com'}
+    # 访问 Web 服务器获取头信息
     local exec_result_str
-    exec_result_str=$(curl -H 'Cache-Control: no-cache' -sSI http://baidu.com 2>&1)
-    # 执行结果，用于容错
+    exec_result_str=$(curl -H 'Cache-Control: no-cache' -sSI "$web_server" 2>&1)
+    # 保存执行结果，用于容错
     local exec_ret="$?"
 
-    # 容错，执行失败时返回 err
+    # 判断执行结果
     if [[ "0" -eq "$exec_ret" ]]; then
-        # 百度时间字符串
-        local baidu_time_str=$(echo "${exec_result_str}" | grep '^Date:' | cut -d' ' -f3-6)
-        # 百度时间戳
-        local baidu_time_stamp=$(date -ud "${baidu_time_str}" '+%s')
+        # Web 服务器时间字符串
+        local server_time_str
+        server_time_str=$(echo "${exec_result_str}" | grep '^Date:' | cut -d' ' -f3-6)
+        # Web 服务器时间戳
+        local server_time_stamp
+        server_time_stamp=$(date -ud "${server_time_str}" '+%s')
         # 本地时间戳
-        local local_time_stamp=$(date '+%s')
-        local fast_time=$[$local_time_stamp-$baidu_time_stamp]
+        local local_time_stamp
+        local_time_stamp=$(date '+%s')
+        local time_diff=$(( local_time_stamp - server_time_stamp))
         # 显示本地时间比标砖时间“快”多少
-        echo "$fast_time"
+        echo "$time_diff"
     else
         >&2 echo "$exec_result_str"
         return "$exec_ret"
     fi
 }
 
-# 以百度时间为基准进行时间同步
-sync_date () {
-    sudo echo -ne && sudo date -s "$(curl -H 'Cache-Control: no-cache' -sI baidu.com | grep '^Date:' | cut -d' ' -f3-6)Z"
-}
 
+# 通过指定 Web 服务器来校正时间
+# https://www.jianshu.com/p/231880efaef7
+sync_time () {
+    # 指定获取标准时间的 Web 服务器
+    local web_server
+    # 如果不指定则使用百度服务器作为基准时间
+    web_server=${1:-'http://baidu.com'}
+    # 申请 sudo 权限，失败则返回
+    sudo echo -n || return
+    # 获取 response 头，失败则返回
+    local header
+    header=$(curl -H 'Cache-Control: no-cache' -sSI "$web_server") || return
+    # 提取时间
+    local date_str
+    date_str=$(echo "$header" | grep '^Date:' | cut -d' ' -f3-6)
+    # 设置时间
+    sudo date -s "${date_str}Z"
+}

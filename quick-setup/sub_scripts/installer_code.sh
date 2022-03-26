@@ -3,7 +3,7 @@
 
 # shopt -s expand_aliases
 
-base_dir () { (cd "$(dirname "${BASH_SOURCE[0]}")"; pwd;) }
+base_dir () { dirname "${BASH_SOURCE[0]}"; }
 script_file () { echo "$(base_dir)/${BASH_SOURCE[0]}"; }
 
 
@@ -96,28 +96,32 @@ ITEM_STATUS_ARRAY[4]='off'
 # functions
 
 install_config () {
-    local data_dir="$(base_dir)/config"
+    local data_dir
+    data_dir="$(base_dir)/config"
     mkdir -p "$data_dir"
     untar_files_from_block_to_directory "$(script_file)" Config "$data_dir"
     bash "$data_dir/install_config.sh"
 }
 
 install_common_package () {
-    local data_dir="$(base_dir)/common"
+    local data_dir
+    data_dir="$(base_dir)/common"
     mkdir -p "$data_dir"
     untar_files_from_block_to_directory "$(script_file)" Common "$data_dir"
     bash "$data_dir/install_common_package.sh"
 }
 
 install_portable_tools () {
-    local data_dir="$(base_dir)/tools"
+    local data_dir
+    data_dir="$(base_dir)/tools"
     mkdir -p "$data_dir"
     untar_files_from_block_to_directory "$(script_file)" 'Portable Tools' "$data_dir"
     bash "$data_dir/install_portable_tools.sh"
 }
 
 install_docker_binary () {
-    local data_dir="$(base_dir)/docker"
+    local data_dir
+    data_dir="$(base_dir)/docker"
     mkdir -p "$data_dir"
     untar_files_from_block_to_directory "$(script_file)" Docker "$data_dir"
     bash "$data_dir/install_docker_binary.sh" "$data_dir/docker-20.10.9.tgz"
@@ -125,12 +129,11 @@ install_docker_binary () {
 
 
 # 遍历所有的命令项，生成菜单参数
-for tag in ${ITEM_TAG_ARRAY[@]}; do
+for tag in "${ITEM_TAG_ARRAY[@]}"; do
     item_list="${item_list} ${tag} '${ITEM_DESC_ARRAY[${tag}]}' '${ITEM_STATUS_ARRAY[${tag}]}' "
 done
 
-export LD_LIBRARY_PATH="$(base_dir)"
-user_input=$(echo "$item_list" | xargs "$(base_dir)/dialog" --stdout --title "System Configuration Menu" \
+user_input=$(echo "$item_list" | LD_LIBRARY_PATH="$(base_dir)" xargs "$(base_dir)/dialog" --stdout --title "System Configuration Menu" \
                 --backtitle "System Initialization" \
                 --checklist "Select the function item you need:" 13 60 6)
 
@@ -143,11 +146,10 @@ if [[ "0" -ne "dialog_ret" ]]; then
 fi
 
 # 解析用户输入
-user_input_array=($user_input)
-
+read -ra user_input_array <<< "$user_input"
 
 clear
-for user_selected_item in ${user_input_array[@]}; do
+for user_selected_item in "${user_input_array[@]}"; do
     ${ITEM_CMD_ARRAY[$user_selected_item]}
 done
 

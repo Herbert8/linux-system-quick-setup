@@ -47,14 +47,15 @@ get_line_index () {
 # $2 从哪个文件提取
 extract_block () {
 
-    local start_line=$(cat "$2" | get_line_index "-----BEGIN ${1^^}-----")
-    local end_line=$(cat "$2" | get_line_index "-----END ${1^^}-----")
+    local start_line
+    start_line=$(get_line_index "-----BEGIN ${1^^}-----" < "$2")
+    local end_line
+    end_line=$(get_line_index "-----END ${1^^}-----" < "$2")
 
-    start_line=$(expr $start_line + 1)
-    end_line=$(expr $end_line - 1)
+    start_line=$((start_line + 1))
+    end_line=$(( end_line - 1))
 
-    # echo $"$original_content" | sed -n "${start_line},${end_line}p"
-    cat "$2" | sed -n "${start_line},${end_line}p"
+    sed -n "${start_line},${end_line}p" < "$2"
 }
 
 
@@ -68,7 +69,7 @@ extract_block_from_bash_script () {
 
 tar_files_in_directory () {
     if [[ -d "$1" ]]; then
-        (cd "$1"; tar zcvf - *)
+        (cd "$1" || return; tar zcv -- *)
     else
         >&2 echo "The 'tar' command failed to execute. Directory '$1' does not exist."
     fi
@@ -83,7 +84,7 @@ clear_invalid_line () {
 
 
 clear_file () {
-    cat "$1" | clear_invalid_line > "$1".tmp
+    clear_invalid_line < "$1" > "$1".tmp
     rm "$1"
     mv "$1".tmp "$1"
 }
