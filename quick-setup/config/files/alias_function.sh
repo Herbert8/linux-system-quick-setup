@@ -1,9 +1,10 @@
 
 
+alias ll='ls -lph --time-style=long-iso --group-directories-first --color=auto'
 
 which exa &>/dev/null && {
-    alias ll='exa -Fghl --time-style=long-iso --group-directories-first --color-scale'
-    alias lla='exa -aFghl --time-style=long-iso --group-directories-first --color-scale'
+    alias lle='exa -Fghl --time-style=long-iso --group-directories-first --color-scale'
+    alias llea='exa -aFghl --time-style=long-iso --group-directories-first --color-scale'
 }
 
 
@@ -31,9 +32,11 @@ unproxy () {
 }
 
 whichex () {
-    local full_path
-    full_path=$(which "$1")
-    readlink -f "$full_path"
+    readlink -f "$(which "$1")"
+}
+
+llex () {
+    ll "$(whichex "$1")"
 }
 
 # 计算本地时间比指定 Web 服务器“快”多少

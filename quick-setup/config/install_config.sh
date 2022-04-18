@@ -22,17 +22,29 @@ sed "s/#######_NETWORK_DEVICE_#######/$device/g" \
 # 在 /etc/profile.d/ 创建 Symbolic Link
 sudo ln -sf "$SCRIPTS_DIR/$BASH_PROMPT_STYLE_FILE_NAME" \
     "/etc/profile.d/$BASH_PROMPT_STYLE_FILE_NAME"
-source "/etc/profile.d/$BASH_PROMPT_STYLE_FILE_NAME"
 
 
 # vim 全局配置文件 ***************************************************************
 echo
-sudo cp "$BASE_DIR/files/vimrc_custom" /etc/
-echo -e "\033[1mThe following line will be added to '/etc/tmux.config':\033[0m"
-echo 'source /etc/vimrc_custom' | sudo tee -a /etc/vimrc
+sudo cp "$BASE_DIR/files/vimrc_custom" "$SCRIPTS_DIR"/
+# 如果 /etc/vimrc 文件存在，则在其末尾引入自定义的配置文件
+vim_global_config='/etc/vimrc'
+if [[ -f "$vim_global_config" ]]; then
+    echo -e "\033[1mThe following line will be added to '$vim_global_config':\033[0m"
+    echo '----------------------------------------------------------------------'
+    echo "source $SCRIPTS_DIR/vimrc_custom" | sudo tee -a "$vim_global_config"
+    echo '----------------------------------------------------------------------'
+    echo
+fi
 
 # tmux 全局配置文件 **************************************************************
-sudo cp "$BASE_DIR/files/tmux.conf" /etc/
+sudo cp "$BASE_DIR/files/tmux.conf" "$SCRIPTS_DIR"/
+tmux_global_config='/etc/tmux.conf'
+echo -e "\033[1mThe following line will be added to '$tmux_global_config':\033[0m"
+echo '----------------------------------------------------------------------'
+echo "source-file $SCRIPTS_DIR/tmux.conf" | sudo tee -a "$tmux_global_config"
+echo '----------------------------------------------------------------------'
+echo
 
 # 别名和函数
 readonly ALIAS_FUNC_FILE_NAME='alias_function.sh'

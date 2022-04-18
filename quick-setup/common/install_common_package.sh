@@ -7,6 +7,6 @@ BASE_DIR=$(base_dir)
 
 
 # 安装基础组件 *******************************************************************
-sudo yum install -y "$BASE_DIR"/packages/*.rpm "$BASE_DIR"/packages/**/*.rpm
+sudo yum install -y "$BASE_DIR"/packages/**/*.rpm
 
 
