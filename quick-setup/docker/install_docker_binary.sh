@@ -135,7 +135,7 @@ if [[ "0" -eq "$sel_path_ret" ]]; then
     sudo mkdir -p "$new_docker_data_storage_path"
     # 安装 Docker
     install_docker_binary \
-        "$BASE_DIR/docker-20.10.9.tgz" \
+        "$BASE_DIR/docker-20.10.21.tgz" \
         "$new_docker_data_storage_path"
 else
     echo -e "${STYLE_NORMAL_IMPORTANT}User cancels operation, skipping Docker installation.${STYLE_NORMAL}"

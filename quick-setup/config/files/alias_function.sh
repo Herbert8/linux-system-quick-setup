@@ -1,6 +1,6 @@
 
 
-alias ll='ls -lph --time-style=long-iso --group-directories-first --color=auto'
+alias ll='ls -lp --time-style=long-iso --group-directories-first --color=auto'
 
 which exa &>/dev/null && {
     alias lle='exa -Fghl --time-style=long-iso --group-directories-first --color-scale'
@@ -36,7 +36,7 @@ whichex () {
 }
 
 llex () {
-    ll "$(whichex "$1")"
+    ls -alp --time-style=long-iso --group-directories-first --color=auto "$(readlink -f "$(which "$1")")"
 }
 
 # 计算本地时间比指定 Web 服务器“快”多少

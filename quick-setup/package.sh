@@ -14,7 +14,7 @@ readonly installer_package
 
 # 打包
 tar_files () {
-    tar --exclude=.DS_Store \
+    gtar --exclude=.DS_Store \
         --exclude=package.sh \
         --exclude=pkg.tar.gz \
         --exclude=sub_scripts \
@@ -35,7 +35,7 @@ scripts_str=$(cat "$(base_dir)/sub_scripts/file_utils.sh" \
 scripts_str=$(echo "$scripts_str" | clear_invalid_line)
 
 # 把脚本字符串做 Base64 编码
-scripts_base64=$(echo "$scripts_str" | base64)
+scripts_base64=$(echo "$scripts_str" | gbase64)
 
 # 将模板读入字符串变量
 installer_template=$(clear_invalid_line < "$(base_dir)/sub_scripts/install_script.template")

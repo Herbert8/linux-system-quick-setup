@@ -3,14 +3,37 @@
 
 # shopt -s expand_aliases
 
-base_dir () { dirname "${BASH_SOURCE[0]}"; }
-script_file () { echo "$(base_dir)/${BASH_SOURCE[0]}"; }
+# 获取 shell 脚本绝对路径
+BASE_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+readonly BASE_DIR
+SCRIPT_FILE=$BASE_DIR/$(basename "${BASH_SOURCE[0]}")
+readonly SCRIPT_FILE
 
+
+# 如果通过 sudo 以 root 权限执行，则将所有权指定为执行 sudo 的用户
+set_tmp_file_permission () {
+    if [[ "$(id -u)" -eq "0" && -n "$SUDO_USER" && -n "$SUDO_UID" && -n "$SUDO_GID" ]]; then
+        chown -R "$SUDO_UID:$SUDO_GID" "$1"
+        chmod -R 700 "$1"
+    fi
+}
+
+# 根据身份处理临时文件权限
+if [[ "$(id -u)" -eq "0" ]]; then
+    # 如果是 root 身份，则临时文件在 /tmp 中
+    TEMP_ROOT_DIR=/tmp/mochasoft
+else
+    TEMP_ROOT_DIR=~/mochasoft
+fi
+readonly TEMP_ROOT_DIR
+readonly TEMP_DIR=$TEMP_ROOT_DIR/.tmp/mp_inst
+
+mkdir -p "$TEMP_DIR"
 
 install_dialog () {
     # local dialog_bin
-    extract_block_from_bash_script 'Dialog' "$(script_file)" | tar zx -C "$(base_dir)" > /dev/null 2>&1
-    chmod +x "$(base_dir)/dialog"
+    extract_block_from_bash_script 'Dialog' "$SCRIPT_FILE" | tar zx -C "$TEMP_DIR" > /dev/null 2>&1
+    chmod +x "$TEMP_DIR/dialog"
 }
 
 # 从 脚本文件中，提取 tar 包，并解压缩到目录
@@ -29,10 +52,6 @@ if [[ "Linux" != "$(uname)" ]]; then
     echo OS must be Linux.
     exit 1
 fi
-
-
-# 申请 sudo 权限
-sudo echo -n || exit 1
 
 # 安装对话框
 install_dialog
@@ -69,33 +88,41 @@ ITEM_STATUS_ARRAY[4]='off'
 
 install_config () {
     local data_dir
-    data_dir="$(base_dir)/config"
+    data_dir="$TEMP_DIR/config"
     mkdir -p "$data_dir"
-    untar_files_from_block_to_directory "$(script_file)" Config "$data_dir"
+    untar_files_from_block_to_directory "$SCRIPT_FILE" Config "$data_dir"
+    # 如果使用了 sudo，则将 Owner 指定为 sudoer
+    set_tmp_file_permission "$data_dir"
     bash "$data_dir/install_config.sh"
 }
 
 install_common_package () {
     local data_dir
-    data_dir="$(base_dir)/common"
+    data_dir="$TEMP_DIR/common"
     mkdir -p "$data_dir"
-    untar_files_from_block_to_directory "$(script_file)" Common "$data_dir"
+    untar_files_from_block_to_directory "$SCRIPT_FILE" Common "$data_dir"
+    # 如果使用了 sudo，则将 Owner 指定为 sudoer
+    set_tmp_file_permission "$TEMP_ROOT_DIR"
     bash "$data_dir/install_common_package.sh"
 }
 
 install_portable_tools () {
     local data_dir
-    data_dir="$(base_dir)/tools"
+    data_dir="$TEMP_DIR/tools"
     mkdir -p "$data_dir"
-    untar_files_from_block_to_directory "$(script_file)" 'Portable Tools' "$data_dir"
+    untar_files_from_block_to_directory "$SCRIPT_FILE" 'Portable Tools' "$data_dir"
+    # 如果使用了 sudo，则将 Owner 指定为 sudoer
+    set_tmp_file_permission "$TEMP_ROOT_DIR"
     bash "$data_dir/install_portable_tools.sh"
 }
 
 install_docker_binary () {
     local data_dir
-    data_dir="$(base_dir)/docker"
+    data_dir="$TEMP_DIR/docker"
     mkdir -p "$data_dir"
-    untar_files_from_block_to_directory "$(script_file)" Docker "$data_dir"
+    untar_files_from_block_to_directory "$SCRIPT_FILE" Docker "$data_dir"
+    # 如果使用了 sudo，则将 Owner 指定为 sudoer
+    set_tmp_file_permission "$TEMP_ROOT_DIR"
     bash "$data_dir/install_docker_binary.sh" "$data_dir/docker-20.10.9.tgz"
 }
 
@@ -105,7 +132,7 @@ for tag in "${ITEM_TAG_ARRAY[@]}"; do
     item_list="${item_list} ${tag} '${ITEM_DESC_ARRAY[${tag}]}' '${ITEM_STATUS_ARRAY[${tag}]}' "
 done
 
-user_input=$(echo "$item_list" | LD_LIBRARY_PATH="$(base_dir)" xargs "$(base_dir)/dialog" --stdout --title "System Configuration Menu" \
+user_input=$(echo "$item_list" | LD_LIBRARY_PATH="$TEMP_DIR" xargs "$TEMP_DIR/dialog" --stdout --title "System Configuration Menu" \
                 --backtitle "System Initialization" \
                 --checklist "Select the function item you need:" 13 60 6)
 
@@ -125,3 +152,6 @@ for user_selected_item in "${user_input_array[@]}"; do
     ${ITEM_CMD_ARRAY[$user_selected_item]}
 done
 
+echo
+echo Done.
+echo
