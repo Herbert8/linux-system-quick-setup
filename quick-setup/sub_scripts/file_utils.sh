@@ -69,7 +69,7 @@ extract_block_from_bash_script () {
 
 tar_files_in_directory () {
     if [[ -d "$1" ]]; then
-        (cd "$1" || return; tar zcv -- *)
+        (cd "$1" || return; gtar --exclude=.DS_Store -zcv -- *)
     else
         >&2 echo "The 'tar' command failed to execute. Directory '$1' does not exist."
     fi

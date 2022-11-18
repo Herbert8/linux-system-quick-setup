@@ -59,27 +59,27 @@ install_dialog
 
 # 安装基础配置 *******************************************************************
 ITEM_TAG_ARRAY[1]=1
-ITEM_DESC_ARRAY[1]='Install PS1 & vim config & tmux config'
+ITEM_DESC_ARRAY[1]='Install "PS1 config" & "vim config" & "tmux config"'
 ITEM_CMD_ARRAY[1]='install_config'
 ITEM_STATUS_ARRAY[1]='on'
 
 # 安装便携工具 *******************************************************************
 ITEM_TAG_ARRAY[2]=2
-ITEM_DESC_ARRAY[2]='Install portable tools'
-ITEM_CMD_ARRAY[2]='install_portable_tools'
+ITEM_DESC_ARRAY[2]='Install "Standalone Tools"'
+ITEM_CMD_ARRAY[2]='install_standalone_tools'
 ITEM_STATUS_ARRAY[2]='on'
 
 
 # 安装通用工具包 *******************************************************************
 ITEM_TAG_ARRAY[3]=3
-ITEM_DESC_ARRAY[3]="Install common 'rpm' packages"
+ITEM_DESC_ARRAY[3]='Install Common Software Packages(rpm format, "root privilege" needed)'
 ITEM_CMD_ARRAY[3]='install_common_package'
 ITEM_STATUS_ARRAY[3]='off'
 
 
 # 安装 Docker *******************************************************************
 ITEM_TAG_ARRAY[4]=4
-ITEM_DESC_ARRAY[4]='Install docker'
+ITEM_DESC_ARRAY[4]='Install Docker("root privilege" needed)'
 ITEM_CMD_ARRAY[4]='install_docker_binary'
 ITEM_STATUS_ARRAY[4]='off'
 
@@ -106,14 +106,14 @@ install_common_package () {
     bash "$data_dir/install_common_package.sh"
 }
 
-install_portable_tools () {
+install_standalone_tools () {
     local data_dir
     data_dir="$TEMP_DIR/tools"
     mkdir -p "$data_dir"
-    untar_files_from_block_to_directory "$SCRIPT_FILE" 'Portable Tools' "$data_dir"
+    untar_files_from_block_to_directory "$SCRIPT_FILE" 'Standalone Tools' "$data_dir"
     # 如果使用了 sudo，则将 Owner 指定为 sudoer
     set_tmp_file_permission "$TEMP_ROOT_DIR"
-    bash "$data_dir/install_portable_tools.sh"
+    bash "$data_dir/install_standalone_tools.sh"
 }
 
 install_docker_binary () {
@@ -134,7 +134,7 @@ done
 
 user_input=$(echo "$item_list" | LD_LIBRARY_PATH="$TEMP_DIR" xargs "$TEMP_DIR/dialog" --stdout --title "System Configuration Menu" \
                 --backtitle "System Initialization" \
-                --checklist "Select the function item you need:" 13 60 6)
+                --checklist "Select the function item you need:" 13 90 6)
 
 dialog_ret="$?"
 # 用户取消输入则退出

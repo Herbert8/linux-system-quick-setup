@@ -13,9 +13,9 @@ change_owner_to_sudoer () {
 
 # 安装到 /opt/tools
 echo
-echo -e "\033[1mCopy the portable tools:\033[0m"
+echo -e "\033[1mCopy the standalone tools:\033[0m"
 # 指定目录名
-readonly TOOLS_DIR_NAME='portable_tools'
+readonly TOOLS_DIR_NAME='standalone_tools'
 # 根据用户指定完整目录路径
 if [[ "$(id -u)" -eq "0" ]]; then
     TOOLS_DIR=/opt/$TOOLS_DIR_NAME

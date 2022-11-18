@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# 注意：本文件设计为在 macOS 上执行
+# 所以 base64 和 tar 等命令使用了这些命令的 GNU 版本，就是 gbase64 和 gtar
 
 # 获取 shell 脚本绝对路径
 base_dir () { dirname "${BASH_SOURCE[0]}"; }
@@ -51,27 +53,30 @@ installer_template="${installer_template//<SCRIPTS_PLACEHOLDER>/${scripts_base64
                             | data_to_block_in_bash_script 'Dialog'
 
     # tar common 目录
-    tar_files_in_directory "$(base_dir)/common" \
+    tar_files_in_directory "$(base_dir)/components/common" \
                             | data_to_block_in_bash_script 'Common'
 
     # tar config 目录
-    tar_files_in_directory "$(base_dir)/config" \
+    tar_files_in_directory "$(base_dir)/components/config" \
                             | data_to_block_in_bash_script 'Config'
 
     # tar docker 目录
-    tar_files_in_directory "$(base_dir)/docker" \
+    tar_files_in_directory "$(base_dir)/components/docker" \
                             | data_to_block_in_bash_script 'Docker'
 
-    # tar tools 目录
-    tar_files_in_directory "$(base_dir)/tools" \
-                            | data_to_block_in_bash_script 'Portable Tools'
+    # tar standalone_tools 目录
+    tar_files_in_directory "$(base_dir)/components/standalone_tools" \
+                            | data_to_block_in_bash_script 'Standalone Tools'
 } > "$installer_package"
 
 
-server_str='bahb@192.168.200.99'
-server_path='/home/bahb/tmp/'
-echo Uploading "'$installer_package'" to "'$server_str:$server_path'..."
-sshpass -p 1 ssh "$server_str" "rm -rf '$server_path'; mkdir -p '$server_path'"
-sshpass -p 1 scp -r "$installer_package" "$server_str:$server_path"
+if nc -zv 192.168.200.99 22; then
+    server_str='bahb@192.168.200.99'
+    server_path='/home/bahb/tmp/'
+    echo Uploading "'$installer_package'" to "'$server_str:$server_path'..."
+    sshpass -p 1 ssh "$server_str" "rm -rf '$server_path'; mkdir -p '$server_path'"
+    sshpass -p 1 scp -r "$installer_package" "$server_str:$server_path"
+fi
+
 echo Complete.
 
