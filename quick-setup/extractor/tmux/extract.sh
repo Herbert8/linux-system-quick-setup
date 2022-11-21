@@ -30,12 +30,13 @@ rm -rf "${OUTPUT_PATH:?}"/*
 mv "$tmp_dir/usr/bin" "$OUTPUT_PATH"
 mv "$tmp_dir/usr/lib64" "$OUTPUT_PATH"
 cp "$BASE_DIR"/misc/* "$OUTPUT_PATH"
+gln -sfr "$OUTPUT_PATH/run.sh" "$OUTPUT_PATH/ptmux"
 
 # 清理临时文件
 rm -rf "$tmp_dir"
 
 # 打包
 (
-    cd "$OUTPUT_PATH" && gtar --remove-files -zcvf tmux.tar.gz -- *
+    cd "$OUTPUT_PATH" && gtar --exclude=.DS_Store --remove-files -zcvf ptmux.tar.gz -- *
 )
 
