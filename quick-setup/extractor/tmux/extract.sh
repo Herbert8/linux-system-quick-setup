@@ -12,6 +12,10 @@ readonly BASE_DIR
 tmp_dir=$(mktemp -d)
 # echo "$tmp_dir"
 
+# 相关 rpm +-*+-*+-*+-*+-*+-*+-*+-*+-*+-*+-*+-*+-*+-*+-*
+# tmux-3.3-1.el7.x86_64.rpm
+# libevent-2.0.21-4.el7.x86_64.rpm
+# +-*+-*+-*+-*+-*+-*+-*+-*+-*+-*+-*+-*+-*+-*+-*+-*+-*+-*
 
 # 遍历 rpm 包，解压缩到临时目录
 for item in "$BASE_DIR"/src_pkg/*.rpm; do
@@ -30,7 +34,7 @@ rm -rf "${OUTPUT_PATH:?}"/*
 mv "$tmp_dir/usr/bin" "$OUTPUT_PATH"
 mv "$tmp_dir/usr/lib64" "$OUTPUT_PATH"
 cp "$BASE_DIR"/misc/* "$OUTPUT_PATH"
-gln -sfr "$OUTPUT_PATH/run.sh" "$OUTPUT_PATH/ptmux"
+mv "$OUTPUT_PATH/run.sh" "$OUTPUT_PATH/ptmux"
 
 # 清理临时文件
 rm -rf "$tmp_dir"
