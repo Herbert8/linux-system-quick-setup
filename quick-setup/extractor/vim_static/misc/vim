@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# 获取当前脚本所在位置
+SCRIPT_FILE=$(readlink -f "${BASH_SOURCE[0]}")
+BASE_DIR=$(dirname "$SCRIPT_FILE")
+readonly SCRIPT_FILE
+readonly BASE_DIR
+
+run_vim () {
+
+    local vim_root=$BASE_DIR
+    VIMRUNTIME=$(find "$vim_root/share/vim" -mindepth 1 -maxdepth 1 -type d -name 'vim*' | head -n1)
+    export VIMRUNTIME
+    "$vim_root/bin/vim" -u "$vim_root/vimrc_custom.vim" "$@"
+
+}
+
+run_vim "$@"
