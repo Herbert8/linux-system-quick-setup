@@ -21,14 +21,19 @@ set_tmp_file_permission () {
 # 根据身份处理临时文件权限
 if [[ "$(id -u)" -eq "0" ]]; then
     # 如果是 root 身份，则临时文件在 /tmp 中
-    TEMP_ROOT_DIR=/tmp/mochasoft
+    TEMP_ROOT_DIR=/tmp/mocha
 else
-    TEMP_ROOT_DIR=~/mochasoft
+    TEMP_ROOT_DIR=~/mocha
 fi
 readonly TEMP_ROOT_DIR
 readonly TEMP_DIR=$TEMP_ROOT_DIR/.tmp/mp_inst
 
 mkdir -p "$TEMP_DIR"
+
+
+# 软件安装的根位置
+SOFT_ROOT=~/mocha
+mkdir -p "$SOFT_ROOT"
 
 install_dialog () {
     # local dialog_bin
@@ -65,15 +70,15 @@ ITEM_STATUS_ARRAY[1]='on'
 
 # 安装便携工具 *******************************************************************
 ITEM_TAG_ARRAY[2]=2
-ITEM_DESC_ARRAY[2]='Install "Standalone Tools"'
-ITEM_CMD_ARRAY[2]='install_standalone_tools'
+ITEM_DESC_ARRAY[2]='Install "Portable Tools"'
+ITEM_CMD_ARRAY[2]='install_portable_tools'
 ITEM_STATUS_ARRAY[2]='on'
 
 
 # 安装通用工具包 *******************************************************************
 ITEM_TAG_ARRAY[3]=3
 ITEM_DESC_ARRAY[3]='Install Common Software Packages(rpm format, "root privilege" needed)'
-ITEM_CMD_ARRAY[3]='install_common_package'
+ITEM_CMD_ARRAY[3]='install_rpm_package'
 ITEM_STATUS_ARRAY[3]='off'
 
 
@@ -93,17 +98,17 @@ install_config () {
     untar_files_from_block_to_directory "$SCRIPT_FILE" Config "$data_dir"
     # 如果使用了 sudo，则将 Owner 指定为 sudoer
     set_tmp_file_permission "$data_dir"
-    bash "$data_dir/install_config.sh"
+    mkdir -p "$SOFT_ROOT/opt/scripts" && bash "$data_dir/install_config.sh" "$SOFT_ROOT/opt/scripts"
 }
 
-install_common_package () {
+install_rpm_package () {
     local data_dir
-    data_dir="$TEMP_DIR/common"
+    data_dir="$TEMP_DIR/rpm"
     mkdir -p "$data_dir"
-    untar_files_from_block_to_directory "$SCRIPT_FILE" Common "$data_dir"
+    untar_files_from_block_to_directory "$SCRIPT_FILE" RPM "$data_dir"
     # 如果使用了 sudo，则将 Owner 指定为 sudoer
     set_tmp_file_permission "$TEMP_ROOT_DIR"
-    bash "$data_dir/install_common_package.sh"
+    bash "$data_dir/install_rpm_package.sh"
 }
 
 install_standalone_tools () {
@@ -113,7 +118,18 @@ install_standalone_tools () {
     untar_files_from_block_to_directory "$SCRIPT_FILE" 'Standalone Tools' "$data_dir"
     # 如果使用了 sudo，则将 Owner 指定为 sudoer
     set_tmp_file_permission "$TEMP_ROOT_DIR"
-    bash "$data_dir/install_standalone_tools.sh"
+    mkdir -p "$SOFT_ROOT/opt/tools" && bash "$data_dir/install_standalone_tools.sh" "$SOFT_ROOT/opt/tools"
+}
+
+install_portable_tools () {
+    local data_dir
+    data_dir="$TEMP_DIR/tools"
+    mkdir -p "$data_dir"
+    untar_files_from_block_to_directory "$SCRIPT_FILE" 'Portable Tools' "$data_dir"
+    # 如果使用了 sudo，则将 Owner 指定为 sudoer
+    set_tmp_file_permission "$TEMP_ROOT_DIR"
+    mkdir -p "$SOFT_ROOT/opt/tools" && bash "$data_dir/install_portable_tools.sh" "$SOFT_ROOT/opt/tools"
+    install_standalone_tools
 }
 
 install_docker_binary () {

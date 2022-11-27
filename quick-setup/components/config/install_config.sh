@@ -11,12 +11,13 @@ change_owner_to_sudoer () {
     fi
 }
 
+SCRIPTS_DIR=${1:-'.'}
 # 判断是否为 root 用户
-if [[ "$(id -u)" -eq "0" ]]; then
-    SCRIPTS_DIR=/opt/scripts
-else
-    SCRIPTS_DIR=~/mochasoft/opt/scripts
-fi
+# if [[ "$(id -u)" -eq "0" ]]; then
+#     SCRIPTS_DIR=/opt/scripts
+# else
+#     SCRIPTS_DIR=~/mochasoft/opt/scripts
+# fi
 readonly SCRIPTS_DIR
 
 # 创建脚本目录
@@ -44,43 +45,43 @@ else
 fi
 
 # vim 配置文件 ***************************************************************
-echo
-# 复制 vim 配置
-cp "$BASE_DIR/files/vimrc_custom" "$SCRIPTS_DIR"/
-if [[ "$(id -u)" -eq "0" ]]; then
-    # 如果是 root 用户，则 /etc/vimrc 作为配置文件
-    vim_config=/etc/vimrc
-else
-    vim_config=~/.vimrc
-fi
+# echo
+# # 复制 vim 配置
+# cp "$BASE_DIR/files/vimrc_custom" "$SCRIPTS_DIR"/
+# if [[ "$(id -u)" -eq "0" ]]; then
+#     # 如果是 root 用户，则 /etc/vimrc 作为配置文件
+#     vim_config=/etc/vimrc
+# else
+#     vim_config=~/.vimrc
+# fi
 
-# 将自定义配置注入默认配置文件
-echo -e "\033[1mThe following line will be added to '$vim_config':\033[0m"
-echo '----------------------------------------------------------------------'
-echo "source $SCRIPTS_DIR/vimrc_custom" | tee -a "$vim_config"
-echo '----------------------------------------------------------------------'
-echo
-# 如果通过 sudo 以 root 权限执行，则将所有权指定为执行 sudo 的用户
-change_owner_to_sudoer "$vim_config"
-chmod 644 "$vim_config"
+# # 将自定义配置注入默认配置文件
+# echo -e "\033[1mThe following line will be added to '$vim_config':\033[0m"
+# echo '----------------------------------------------------------------------'
+# echo "source $SCRIPTS_DIR/vimrc_custom" | tee -a "$vim_config"
+# echo '----------------------------------------------------------------------'
+# echo
+# # 如果通过 sudo 以 root 权限执行，则将所有权指定为执行 sudo 的用户
+# change_owner_to_sudoer "$vim_config"
+# chmod 644 "$vim_config"
 
 # tmux 配置文件 **************************************************************
-if [[ "$(id -u)" -eq "0" ]]; then
-    tmux_config=/etc/tmux.conf
-else
-    tmux_config=~/.tmux.conf
-fi
-cp "$BASE_DIR/files/tmux.conf" "$SCRIPTS_DIR"/
+# if [[ "$(id -u)" -eq "0" ]]; then
+#     tmux_config=/etc/tmux.conf
+# else
+#     tmux_config=~/.tmux.conf
+# fi
+# cp "$BASE_DIR/files/tmux.conf" "$SCRIPTS_DIR"/
 
-# 将自定义配置注入默认配置文件
-echo -e "\033[1mThe following line will be added to '$tmux_config':\033[0m"
-echo '----------------------------------------------------------------------'
-echo "source-file $SCRIPTS_DIR/tmux.conf" | tee -a "$tmux_config"
-echo '----------------------------------------------------------------------'
-echo
-# 如果通过 sudo 以 root 权限执行，则将所有权指定为执行 sudo 的用户
-change_owner_to_sudoer "$tmux_config"
-chmod 644 "$tmux_config"
+# # 将自定义配置注入默认配置文件
+# echo -e "\033[1mThe following line will be added to '$tmux_config':\033[0m"
+# echo '----------------------------------------------------------------------'
+# echo "source-file $SCRIPTS_DIR/tmux.conf" | tee -a "$tmux_config"
+# echo '----------------------------------------------------------------------'
+# echo
+# # 如果通过 sudo 以 root 权限执行，则将所有权指定为执行 sudo 的用户
+# change_owner_to_sudoer "$tmux_config"
+# chmod 644 "$tmux_config"
 
 # 别名和函数 ****************************************************************
 readonly ALIAS_FUNC_FILE_NAME='alias_function.sh'

@@ -31,8 +31,7 @@ cd "$OUTPUT_PATH" && curl -x http://127.0.0.1:8888 -OL "https://github.com/vim/v
 docker run -i --rm \
     -v "$OUTPUT_PATH":/out \
     -w /vimbuildcache alpine /bin/sh << EOF
-        pwd
-        cp /out/* ./
+        mv /out/* ./
         apk add gcc make musl-dev ncurses-static
         tar xvfz "${VIM_SRC_ARCHIVE}"
         cd vim-*

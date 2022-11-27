@@ -53,8 +53,8 @@ installer_template="${installer_template//<SCRIPTS_PLACEHOLDER>/${scripts_base64
                             | data_to_block_in_bash_script 'Dialog'
 
     # tar common 目录
-    tar_files_in_directory "$(base_dir)/components/common" \
-                            | data_to_block_in_bash_script 'Common'
+    tar_files_in_directory "$(base_dir)/components/rpm" \
+                            | data_to_block_in_bash_script 'RPM'
 
     # tar config 目录
     tar_files_in_directory "$(base_dir)/components/config" \
@@ -63,6 +63,10 @@ installer_template="${installer_template//<SCRIPTS_PLACEHOLDER>/${scripts_base64
     # tar docker 目录
     tar_files_in_directory "$(base_dir)/components/docker" \
                             | data_to_block_in_bash_script 'Docker'
+
+    # tar portable_tools 目录
+    tar_files_in_directory "$(base_dir)/components/portable_tools" \
+                            | data_to_block_in_bash_script 'Portable Tools'
 
     # tar standalone_tools 目录
     tar_files_in_directory "$(base_dir)/components/standalone_tools" \
@@ -74,7 +78,7 @@ if nc -zv 192.168.200.99 22; then
     server_str='bahb@192.168.200.99'
     server_path='/home/bahb/tmp/'
     echo Uploading "'$installer_package'" to "'$server_str:$server_path'..."
-    sshpass -p 1 ssh "$server_str" "rm -rf '$server_path'; mkdir -p '$server_path'"
+    sshpass -p 1 ssh "$server_str" "mkdir -p '$server_path'; rm -rf '$server_path'/*; "
     sshpass -p 1 scp -r "$installer_package" "$server_str:$server_path"
 fi
 

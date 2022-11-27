@@ -18,8 +18,7 @@ readonly STYLE_TITLE_IMPORTANT="\033[${TEXT_RESET_ALL_ATTRIBUTES}m\033[${TEXT_BO
 readonly STYLE_NORMAL_IMPORTANT="\033[${TEXT_RESET_ALL_ATTRIBUTES}m\033[${COLOR_F_LIGHT_RED}m"
 
 # 获取 shell 脚本绝对路径
-base_dir () { dirname "${BASH_SOURCE[0]}"; }
-BASE_DIR=$(base_dir)
+BASE_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 readonly BASE_DIR
 
 install_docker_binary () {
@@ -118,6 +117,15 @@ EOF
     echo
 }
 
+# Docker 静态文件包
+DOCKER_STATIC_ARCHIVE=$BASE_DIR/docker-20.10.21.tgz
+# 判断是否存在
+if [[ ! -f "$DOCKER_STATIC_ARCHIVE" ]]; then
+    echo
+    >&2 echo 'Docker static archive does not exist.'
+    echo
+    return 1
+fi
 
 # 安装 Docker
 new_docker_data_storage_path='/srv/docker_data'
@@ -135,7 +143,7 @@ if [[ "0" -eq "$sel_path_ret" ]]; then
     sudo mkdir -p "$new_docker_data_storage_path"
     # 安装 Docker
     install_docker_binary \
-        "$BASE_DIR/docker-20.10.21.tgz" \
+        "$DOCKER_STATIC_ARCHIVE" \
         "$new_docker_data_storage_path"
 else
     echo -e "${STYLE_NORMAL_IMPORTANT}User cancels operation, skipping Docker installation.${STYLE_NORMAL}"

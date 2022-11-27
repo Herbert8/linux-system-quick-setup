@@ -38,7 +38,7 @@ OUTPUT_FILE=$OUTPUT_PATH/nmap.tar
 (
     cd "$tmp_dir/usr" && gtar --exclude=.DS_Store --remove-files -cvf "$OUTPUT_FILE" -- bin/*
     cd "$tmp_dir/usr" && gtar --exclude=.DS_Store --remove-files -rvf "$OUTPUT_FILE" -- lib64/*
-    chmod +x "$BASE_DIR/misc/run.sh"
+    chmod +x "$BASE_DIR/misc/run"
     cd "$BASE_DIR/misc" &&  gtar --exclude=.DS_Store -rvf "$OUTPUT_FILE" -- *
     gzip "$OUTPUT_FILE"
 )

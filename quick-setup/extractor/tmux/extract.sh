@@ -34,13 +34,14 @@ rm -rf "${OUTPUT_PATH:?}"/*
 mv "$tmp_dir/usr/bin" "$OUTPUT_PATH"
 mv "$tmp_dir/usr/lib64" "$OUTPUT_PATH"
 cp "$BASE_DIR"/misc/* "$OUTPUT_PATH"
-mv "$OUTPUT_PATH/run.sh" "$OUTPUT_PATH/ptmux"
+bash "$BASE_DIR/build_reptyr.sh"
+mv "$OUTPUT_PATH/reptyr" "$OUTPUT_PATH/bin/"
 
 # 清理临时文件
 rm -rf "$tmp_dir"
 
 # 打包
 (
-    cd "$OUTPUT_PATH" && gtar --exclude=.DS_Store --remove-files -zcvf ptmux.tar.gz -- *
+    cd "$OUTPUT_PATH" && gtar --exclude=.DS_Store --remove-files -zcvf tmux.tar.gz -- *
 )
 
