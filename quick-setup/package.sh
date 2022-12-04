@@ -10,7 +10,7 @@ base_dir () { dirname "${BASH_SOURCE[0]}"; }
 source "$(base_dir)/sub_scripts/file_utils.sh"
 
 # 要生成的安装包名称
-readonly package_basename='install.sh'
+readonly package_basename='tools_installer.sh'
 installer_package="$(base_dir)/$package_basename"
 readonly installer_package
 

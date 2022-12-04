@@ -31,10 +31,6 @@ readonly TEMP_DIR=$TEMP_ROOT_DIR/.tmp/mp_inst
 mkdir -p "$TEMP_DIR"
 
 
-# 软件安装的根位置
-SOFT_ROOT=~/mocha
-mkdir -p "$SOFT_ROOT"
-
 install_dialog () {
     # local dialog_bin
     extract_block_from_bash_script 'Dialog' "$SCRIPT_FILE" | tar zx -C "$TEMP_DIR" > /dev/null 2>&1
@@ -63,30 +59,34 @@ install_dialog
 
 
 # 安装基础配置 *******************************************************************
-ITEM_TAG_ARRAY[1]=1
-ITEM_DESC_ARRAY[1]='Install "PS1 config" & "vim config" & "tmux config"'
-ITEM_CMD_ARRAY[1]='install_config'
-ITEM_STATUS_ARRAY[1]='on'
+menu_item_index=$(( ${#ITEM_TAG_ARRAY[@]} + 1))
+ITEM_TAG_ARRAY[$menu_item_index]=$menu_item_index
+ITEM_DESC_ARRAY[$menu_item_index]='Install "User Configuration"'
+ITEM_CMD_ARRAY[$menu_item_index]='install_config'
+ITEM_STATUS_ARRAY[$menu_item_index]='on'
 
 # 安装便携工具 *******************************************************************
-ITEM_TAG_ARRAY[2]=2
-ITEM_DESC_ARRAY[2]='Install "Portable Tools"'
-ITEM_CMD_ARRAY[2]='install_portable_tools'
-ITEM_STATUS_ARRAY[2]='on'
+menu_item_index=$(( ${#ITEM_TAG_ARRAY[@]} + 1))
+ITEM_TAG_ARRAY[$menu_item_index]=$menu_item_index
+ITEM_DESC_ARRAY[$menu_item_index]='Install "Portable Tools"'
+ITEM_CMD_ARRAY[$menu_item_index]='install_portable_tools'
+ITEM_STATUS_ARRAY[$menu_item_index]='on'
 
 
 # 安装通用工具包 *******************************************************************
-ITEM_TAG_ARRAY[3]=3
-ITEM_DESC_ARRAY[3]='Install Common Software Packages(rpm format, "root privilege" needed)'
-ITEM_CMD_ARRAY[3]='install_rpm_package'
-ITEM_STATUS_ARRAY[3]='off'
+# menu_item_index=$(( ${#ITEM_TAG_ARRAY[@]} + 1))
+# ITEM_TAG_ARRAY[$menu_item_index]=$menu_item_index
+# ITEM_DESC_ARRAY[$menu_item_index]='Install Common Software Packages (rpm format, "root privilege" needed)'
+# ITEM_CMD_ARRAY[$menu_item_index]='install_rpm_package'
+# ITEM_STATUS_ARRAY[$menu_item_index]='off'
 
 
 # 安装 Docker *******************************************************************
-ITEM_TAG_ARRAY[4]=4
-ITEM_DESC_ARRAY[4]='Install Docker("root privilege" needed)'
-ITEM_CMD_ARRAY[4]='install_docker_binary'
-ITEM_STATUS_ARRAY[4]='off'
+# menu_item_index=$(( ${#ITEM_TAG_ARRAY[@]} + 1))
+# ITEM_TAG_ARRAY[$menu_item_index]=$menu_item_index
+# ITEM_DESC_ARRAY[$menu_item_index]='Install Docker Static Binary ("root privilege" needed)'
+# ITEM_CMD_ARRAY[$menu_item_index]='install_docker_binary'
+# ITEM_STATUS_ARRAY[$menu_item_index]='off'
 
 
 # functions
@@ -98,7 +98,9 @@ install_config () {
     untar_files_from_block_to_directory "$SCRIPT_FILE" Config "$data_dir"
     # 如果使用了 sudo，则将 Owner 指定为 sudoer
     set_tmp_file_permission "$data_dir"
-    mkdir -p "$SOFT_ROOT/opt/scripts" && bash "$data_dir/install_config.sh" "$SOFT_ROOT/opt/scripts"
+    # 脚本安装位置
+    local scripts_root=$SOFT_ROOT/scripts
+    mkdir -p "$scripts_root" && bash "$data_dir/install_config.sh" "$scripts_root"
 }
 
 install_rpm_package () {
@@ -118,7 +120,9 @@ install_standalone_tools () {
     untar_files_from_block_to_directory "$SCRIPT_FILE" 'Standalone Tools' "$data_dir"
     # 如果使用了 sudo，则将 Owner 指定为 sudoer
     set_tmp_file_permission "$TEMP_ROOT_DIR"
-    mkdir -p "$SOFT_ROOT/opt/tools" && bash "$data_dir/install_standalone_tools.sh" "$SOFT_ROOT/opt/tools"
+    # 工具安装位置
+    local tool_root=$SOFT_ROOT/tools
+    mkdir -p "$tool_root" && bash "$data_dir/install_standalone_tools.sh" "$tool_root"
 }
 
 install_portable_tools () {
@@ -128,7 +132,9 @@ install_portable_tools () {
     untar_files_from_block_to_directory "$SCRIPT_FILE" 'Portable Tools' "$data_dir"
     # 如果使用了 sudo，则将 Owner 指定为 sudoer
     set_tmp_file_permission "$TEMP_ROOT_DIR"
-    mkdir -p "$SOFT_ROOT/opt/tools" && bash "$data_dir/install_portable_tools.sh" "$SOFT_ROOT/opt/tools"
+    # 工具安装位置
+    local tool_root=$SOFT_ROOT/tools
+    mkdir -p "$tool_root" && bash "$data_dir/install_portable_tools.sh" "$tool_root"
     install_standalone_tools
 }
 
@@ -148,13 +154,15 @@ for tag in "${ITEM_TAG_ARRAY[@]}"; do
     item_list="${item_list} ${tag} '${ITEM_DESC_ARRAY[${tag}]}' '${ITEM_STATUS_ARRAY[${tag}]}' "
 done
 
-user_input=$(echo "$item_list" | LD_LIBRARY_PATH="$TEMP_DIR" xargs "$TEMP_DIR/dialog" --stdout --title "System Configuration Menu" \
-                --backtitle "System Initialization" \
-                --checklist "Select the function item you need:" 13 90 6)
 
-dialog_ret="$?"
-# 用户取消输入则退出
-if [[ "0" -ne "dialog_ret" ]]; then
+# 选择要安装的内容，用户取消输入则退出
+item_count=${#ITEM_TAG_ARRAY[@]}
+menu_height=$(( item_count + 8 ))
+if ! user_input=$(echo "$item_list" | \
+                LD_LIBRARY_PATH="$TEMP_DIR" xargs "$TEMP_DIR/dialog" \
+                --stdout --title "System Configuration Menu" \
+                --backtitle "System Initialization" \
+                --checklist "Select the function item you need:" $menu_height 90 $item_count); then
     clear
     echo "User cancels the operation."
     exit 1
@@ -163,7 +171,22 @@ fi
 # 解析用户输入
 read -ra user_input_array <<< "$user_input"
 
+# 软件安装的根位置
+SOFT_ROOT=~/mocha/opt
+if ! SOFT_ROOT=$(LD_LIBRARY_PATH="$TEMP_DIR" "$TEMP_DIR/dialog" --stdout \
+                    --title "Select the installation directory" \
+                    --backtitle "System Initialization" \
+                    --dselect "$SOFT_ROOT" 13 90); then
+    clear
+    echo "User cancels the operation."
+    exit 1
+fi
+# 处理路径中存在多个 / 的情况
+SOFT_ROOT=$(dirname "$SOFT_ROOT/placeholder")
+mkdir -p "$SOFT_ROOT"
+
 clear
+# 处理用户选择的安装项
 for user_selected_item in "${user_input_array[@]}"; do
     ${ITEM_CMD_ARRAY[$user_selected_item]}
 done

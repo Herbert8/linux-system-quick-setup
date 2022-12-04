@@ -21,16 +21,20 @@ readonly STYLE_NORMAL_IMPORTANT="\033[${TEXT_RESET_ALL_ATTRIBUTES}m\033[${COLOR_
 BASE_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 readonly BASE_DIR
 
+# 安装 Docker 二进制文件
+# $1 Docker 压缩包
+# $2 安装到的位置
+# $3 存储数据的位置
 install_docker_binary () {
 
     # 常量定义 ======================================================================
     # 这里可以根据需要来指定相应的常量值
     # 要安装的 docker 二进制包文件
-    readonly DOCKER_PACKAGE="$1"
+    readonly DOCKER_PACKAGE=$1
     # 安装到的位置
-    readonly DOCKER_STORAGE_PATH="/opt"
+    readonly DOCKER_STORAGE_PATH=$2
     # *-*-*-*-*-*- 新的 Docker 数据存储位置，这里提供默认值，使用时根据需要修改 *-*-*-*-*-*-*
-    readonly NEW_DOCKER_DATA_STORAGE_PATH="$2"
+    readonly NEW_DOCKER_DATA_STORAGE_PATH=$3
     # systemd 服务名
     readonly UNIT_NAME="docker_static.service"
     # systemd Unit 文件位置
@@ -62,12 +66,12 @@ install_docker_binary () {
     sudo tar zxvf "$DOCKER_PACKAGE" -C "$DOCKER_STORAGE_PATH"
 
     # 创建 Symbolic Link
-    echo
-    echo -e "${STYLE_TITLE}Create symbolic links:${STYLE_NORMAL}"
-    for file in "${DOCKER_STORAGE_PATH}/docker/"*; do
-        sudo ln -sf "$file" "/usr/bin/$(basename $file)";
-        echo "/usr/bin/$(basename $file) -> $file";
-    done
+    # echo
+    # echo -e "${STYLE_TITLE}Create symbolic links:${STYLE_NORMAL}"
+    # for file in "${DOCKER_STORAGE_PATH}/docker/"*; do
+    #     sudo ln -sf "$file" "/usr/bin/$(basename $file)";
+    #     echo "/usr/bin/$(basename $file) -> $file";
+    # done
 
     # 创建服务
     echo
@@ -144,6 +148,7 @@ if [[ "0" -eq "$sel_path_ret" ]]; then
     # 安装 Docker
     install_docker_binary \
         "$DOCKER_STATIC_ARCHIVE" \
+        "$1" \
         "$new_docker_data_storage_path"
 else
     echo -e "${STYLE_NORMAL_IMPORTANT}User cancels operation, skipping Docker installation.${STYLE_NORMAL}"

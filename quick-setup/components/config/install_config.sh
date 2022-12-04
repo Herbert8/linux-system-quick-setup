@@ -41,7 +41,9 @@ if [[ "$(id -u)" -eq "0" ]]; then
     ln -sf "$SCRIPTS_DIR/$BASH_PROMPT_STYLE_FILE_NAME" \
         "/etc/profile.d/$BASH_PROMPT_STYLE_FILE_NAME"
 else
-    echo "source $SCRIPTS_DIR/$BASH_PROMPT_STYLE_FILE_NAME" >> ~/.bashrc
+    BASH_PROMPT_STYLE_FILE_PATH=$SCRIPTS_DIR/$BASH_PROMPT_STYLE_FILE_NAME
+    BASH_PROMPT_STYLE_FILE_PATH=${BASH_PROMPT_STYLE_FILE_PATH/#$HOME\//'~/'}
+    echo "source $BASH_PROMPT_STYLE_FILE_PATH" >> ~/.bashrc
 fi
 
 # vim 配置文件 ***************************************************************
@@ -91,4 +93,6 @@ cp "$BASE_DIR/files/$ALIAS_FUNC_FILE_NAME" "$SCRIPTS_DIR"/
 change_owner_to_sudoer "$SCRIPTS_DIR"
 
 # 在 .bashrc 中引用 别名和函数文件
-echo "source $SCRIPTS_DIR/$ALIAS_FUNC_FILE_NAME" >> ~/.bashrc
+ALIAS_FUNC_FILE_PATH=$SCRIPTS_DIR/$ALIAS_FUNC_FILE_NAME
+ALIAS_FUNC_FILE_PATH=${ALIAS_FUNC_FILE_PATH/#$HOME\//'~/'}
+echo "source $ALIAS_FUNC_FILE_PATH" >> ~/.bashrc
