@@ -82,7 +82,7 @@ sprint_colored_text () {
         attrs=${attrs}${!i}';'
     done
     local msg=${1-}
-    echo -n "\033[0;${attrs}m${msg}\033[0m"
+    echo -n "\033[0;${attrs}m${msg}"
 }
 export -f sprint_colored_text
 
