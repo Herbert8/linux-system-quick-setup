@@ -60,55 +60,121 @@ COLOR_B_WHITE=107
 # 网卡接口
 PROMPT_NETWORK_INTERFACE='#######_NETWORK_DEVICE_#######'
 
-# 定义颜色变量
-PROMPT_COLOR_DEFAULT_RESET="\e[${TEXT_RESET_ALL_ATTRIBUTES}m"
-PROMPT_COLOR_DEFAULT_DIM="\e[${TEXT_RESET_ALL_ATTRIBUTES};${COLOR_F_DEFAULT};${TEXT_DIM}m"
+# 颜色相关 API ******************************************************************
 
-PROMPT_COLOR_PINK="\e[${TEXT_RESET_ALL_ATTRIBUTES};${COLOR_F_MAGENTA}m"
-PROMPT_COLOR_GREEN="\e[${TEXT_RESET_ALL_ATTRIBUTES};${COLOR_F_GREEN}m"
-PROMPT_COLOR_BLUE="\e[${TEXT_RESET_ALL_ATTRIBUTES};${COLOR_F_BLUE}m"
-PROMPT_COLOR_YELLOW="\e[${TEXT_RESET_ALL_ATTRIBUTES};${COLOR_F_YELLOW}m"
-PROMPT_COLOR_CYAN="\e[${TEXT_RESET_ALL_ATTRIBUTES};${COLOR_F_CYAN}m"
+# 重置颜色设置
+print_color_reset () {
+    echo -ne "\033[0m"
+}
 
-PROMPT_COLOR_PINK_BOLD_BRIGHT="\e[${TEXT_RESET_ALL_ATTRIBUTES};${COLOR_F_MAGENTA};${TEXT_BOLD_BRIGHT}m"
-PROMPT_COLOR_GREEN_BOLD_BRIGHT="\e[${TEXT_RESET_ALL_ATTRIBUTES};${COLOR_F_GREEN};${TEXT_BOLD_BRIGHT}m"
-PROMPT_COLOR_BLUE_BOLD_BRIGHT="\e[${TEXT_RESET_ALL_ATTRIBUTES};${COLOR_F_BLUE};${TEXT_BOLD_BRIGHT}m"
-PROMPT_COLOR_YELLOW_BOLD_BRIGHT="\e[${TEXT_RESET_ALL_ATTRIBUTES};${COLOR_F_YELLOW};${TEXT_BOLD_BRIGHT}m"
-PROMPT_COLOR_CYAN_BOLD_BRIGHT="\e[${TEXT_RESET_ALL_ATTRIBUTES};${COLOR_F_CYAN};${TEXT_BOLD_BRIGHT}m"
+# 使用指定颜色打印文字
+# 颜色值通过前面的参数指定，最后一个参数指定输入文字
+print_color () {
+    for color in "$@"; do
+        echo -ne "\033[${color}m"
+    done
+}
 
+# 生成彩色文本
+sprint_colored_text () {
+    local attrs=''
+    [[ "$#" -gt "1" ]] && for (( i=2;i<=$#;i++ )); do
+        attrs=${attrs}${!i}';'
+    done
+    local msg=${1-}
+    echo -n "\033[0;${attrs}m${msg}\033[0m"
+}
+export -f sprint_colored_text
 
-PROMPT_COLOR_CYAN_DIM="\e[${TEXT_RESET_ALL_ATTRIBUTES}m\e[${COLOR_F_CYAN};${TEXT_DIM}m"
-PROMPT_COLOR_YELLOW_DIM="\e[${TEXT_RESET_ALL_ATTRIBUTES}m\e[${COLOR_F_YELLOW};${TEXT_DIM}m"
-PROMPT_COLOR_BLUE_DIM="\e[${TEXT_RESET_ALL_ATTRIBUTES}m\e[${COLOR_F_LIGHT_BLUE};${TEXT_DIM}m"
+# 打印彩色文本
+print_colored_text () {
+    echo -ne "$(sprint_colored_text "$@")"
+}
+export -f print_colored_text
 
+# 打印彩色文本后换行
+println_colored_text () {
+    print_colored_text "$@"
+    echo
+}
+export -f println_colored_text
 
+# 定义表示各个部分的值和颜色 *******************************************************
+prompt_user () {
+    if [[ "$PRODUCTION_ENV" == true ]]; then
+        print_colored_text '\u' $COLOR_F_GREEN
+    else
+        print_colored_text '\u' $COLOR_F_GREEN $TEXT_BOLD_BRIGHT
+    fi
+}
 
-# 定义表示各个部分的值和颜色
-PROMPT_USER=${PROMPT_COLOR_GREEN_BOLD_BRIGHT}'\u'
-PROMPT_AT=${PROMPT_COLOR_DEFAULT_RESET}'@'
-PROMPT_HOST=${PROMPT_COLOR_CYAN_BOLD_BRIGHT}'\H'
+prompt_at () {
+    print_colored_text '@'
+}
+
+prompt_host () {
+    print_colored_text '\H' $COLOR_F_CYAN $TEXT_BOLD_BRIGHT
+}
 
 # 获取 IP 的命令
-get_ip_addr () { ip address show ${PROMPT_NETWORK_INTERFACE} | sed -nr 's/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p'; }
-PROMPT_IP_ADDR="[${PROMPT_COLOR_CYAN_BOLD_BRIGHT}\$(get_ip_addr)]"
-PROMPT_COLON=${PROMPT_COLOR_DEFAULT_RESET}':'
-PROMPT_CUR_PATH=${PROMPT_COLOR_YELLOW_BOLD_BRIGHT}'\w'
+get_ip_addr () {
+    local local_ip
+    local_ip=$(ip address show ${PROMPT_NETWORK_INTERFACE} | sed -nr 's/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
+    local_ip=${local_ip/$'\n'/ }
+    echo "$local_ip"
+}
+
+prompt_ip_addr () {
+    print_colored_text "[$(get_ip_addr)]" $COLOR_F_CYAN $TEXT_BOLD_BRIGHT
+}
+
+prompt_colon () {
+    print_colored_text ':'
+}
+
+prompt_current_path () {
+    print_colored_text '\w' $COLOR_F_YELLOW $TEXT_BOLD_BRIGHT
+}
 
 # 获取日期的命令
 get_date_time () { date "+%Y-%m-%d %H:%M:%S %z"; }
-PROMPT_DATE_TIME="${PROMPT_COLOR_DEFAULT_DIM}[\$(get_date_time)]"
+
+prompt_date_time () {
+    print_colored_text "$(get_date_time)" $COLOR_F_DEFAULT $TEXT_DIM
+}
 
 # 获取代理设置
-PROMPT_HTTP_PROXY="${PROMPT_COLOR_CYAN_DIM}\${http_proxy}"
-PROMPT_HTTPS_PROXY="${PROMPT_COLOR_YELLOW_DIM}\${https_proxy}"
-PROMPT_ALL_PROXY="${PROMPT_COLOR_BLUE_DIM}\${all_proxy}"
+prompt_http_proxy () {
+    print_colored_text "${http_proxy-}" $COLOR_F_CYAN $TEXT_DIM
+}
 
-PROMPT_CHAR="${PROMPT_COLOR_DEFAULT_RESET}"'\n\$ '
+prompt_https_proxy () {
+    print_colored_text "${https_proxy-}" $COLOR_F_YELLOW $TEXT_DIM
+}
+
+# PROMPT_ALL_PROXY="${PROMPT_COLOR_BLUE_DIM}\${all_proxy}"
+prompt_all_proxy () {
+    print_colored_text "${all_proxy-}" $COLOR_F_BLUE $TEXT_DIM
+}
+
+prompt_char () {
+    print_colored_text '\n\$ '
+}
+
+prompt_prod_tag () {
+    if [[ "$PRODUCTION_ENV" == true ]]; then
+        print_colored_text '[' $COLOR_F_LIGHT_YELLOW $TEXT_BOLD_BRIGHT
+        print_colored_text '=PRODUCTION=' $COLOR_F_LIGHT_RED $TEXT_BOLD_BRIGHT
+        print_colored_text ']' $COLOR_F_LIGHT_YELLOW $TEXT_BOLD_BRIGHT
+        print_colored_text '-'
+    else
+        print_colored_text ''
+    fi
+}
+
+PRODUCTION_ENV=false
 
 # 设置提示风格
-PS1="${PROMPT_USER}${PROMPT_AT}${PROMPT_HOST}${PROMPT_IP_ADDR}${PROMPT_COLON}${PROMPT_CUR_PATH} ${PROMPT_DATE_TIME} ${PROMPT_HTTP_PROXY} ${PROMPT_HTTPS_PROXY} ${PROMPT_ALL_PROXY}${PROMPT_CHAR}"
+PS1="$(prompt_prod_tag)$(prompt_user)$(prompt_at)$(prompt_host)$(prompt_ip_addr)$(prompt_colon)$(prompt_current_path) \$(prompt_date_time) \$(prompt_http_proxy) \$(prompt_https_proxy) \$(prompt_all_proxy)$(prompt_char)"
 
-# 带生产环境标识
-# PROD_TAG="\033[1;93m[\033[91m=PRODUCTION=\033[93m]\033[0m"
-# PROMPT_PROD_USER=${PROMPT_COLOR_GREEN}'\u'
-# PS1="${PROD_TAG}-${PROMPT_PROD_USER}${PROMPT_AT}${PROMPT_HOST}${PROMPT_IP_ADDR}${PROMPT_COLON}${PROMPT_CUR_PATH} ${PROMPT_DATE_TIME} ${PROMPT_HTTP_PROXY} ${PROMPT_HTTPS_PROXY} ${PROMPT_ALL_PROXY}${PROMPT_CHAR}"
+
