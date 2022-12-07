@@ -81,6 +81,7 @@ sprint_colored_text () {
     [[ "$#" -gt "1" ]] && for (( i=2;i<=$#;i++ )); do
         attrs=${attrs}${!i}';'
     done
+    attrs=${attrs%;}
     local msg=${1-}
     echo -n "\033[0;${attrs}m${msg}"
 }
@@ -119,7 +120,7 @@ prompt_host () {
 # 获取 IP 的命令
 get_ip_addr () {
     local local_ip
-    local_ip=$(ip address show ${PROMPT_NETWORK_INTERFACE} | sed -nr 's/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
+    local_ip=$(/usr/sbin/ip address show ${PROMPT_NETWORK_INTERFACE} | sed -nr 's/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
     local_ip=${local_ip/$'\n'/ }
     echo "$local_ip"
 }
@@ -152,7 +153,6 @@ prompt_https_proxy () {
     print_colored_text "${https_proxy-}" $COLOR_F_YELLOW $TEXT_DIM
 }
 
-# PROMPT_ALL_PROXY="${PROMPT_COLOR_BLUE_DIM}\${all_proxy}"
 prompt_all_proxy () {
     print_colored_text "${all_proxy-}" $COLOR_F_BLUE $TEXT_DIM
 }
