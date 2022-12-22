@@ -22,11 +22,12 @@ find "$BASE_DIR" -type f -name '*.tar.gz' | while read -r tool_pkg; do
     extract_package "$tool_pkg"
 done
 
-# 指定写入配置信息的文件，如果不具备写入权限则处理 ~/.bashrc
-ALIAS_FUNCTION_FILE=$PORTABLE_TOOL_DIR/../scripts/alias_function.sh
-[[ ! -w "$ALIAS_FUNCTION_FILE" ]] && ALIAS_FUNCTION_FILE=~/.bashrc
 
 # 为 portable_tool 生成别名，注入 alias_function.sh
+ALIAS_FUNCTION_FILE=$PORTABLE_TOOL_DIR/../etc/alias_function.sh
+# alias_function.sh 不存在则注入 .bashrc
+[[ ! -f "$ALIAS_FUNCTION_FILE" ]] && ALIAS_FUNCTION_FILE=~/.bashrc
+
 alias_tool () {
     local tool_name=${1:-}
     local tool_path
@@ -37,14 +38,13 @@ alias_tool () {
     fi
 }
 
-[[ -x "$PORTABLE_TOOL_DIR/nmap/run" ]] && "$PORTABLE_TOOL_DIR/nmap/run"
+# [[ -x "$PORTABLE_TOOL_DIR/nmap/run" ]] && "$PORTABLE_TOOL_DIR/nmap/run"
 
 alias_tool vim
 alias_tool tmux
-alias_tool ncat
-alias_tool nmap
-alias_tool nping
+# alias_tool ncat
+# alias_tool nmap
+# alias_tool nping
+# alias_tool jq
 
-# 插入 PATH
-SEARCH_PATH_TO_INSERT=${PORTABLE_TOOL_DIR/$HOME/'~'}
-[[ -w "$ALIAS_FUNCTION_FILE" ]] && echo "export PATH=$SEARCH_PATH_TO_INSERT:\$PATH" >> "$ALIAS_FUNCTION_FILE"
+

@@ -23,7 +23,7 @@ if [[ "$(id -u)" -eq "0" ]]; then
     # 如果是 root 身份，则临时文件在 /tmp 中
     TEMP_ROOT_DIR=/tmp/mocha
 else
-    TEMP_ROOT_DIR=~/mocha
+    TEMP_ROOT_DIR=~/.local/mocha
 fi
 readonly TEMP_ROOT_DIR
 readonly TEMP_DIR=$TEMP_ROOT_DIR/.tmp/mp_inst
@@ -59,18 +59,18 @@ install_dialog
 
 
 # 安装基础配置 *******************************************************************
-menu_item_index=$(( ${#ITEM_TAG_ARRAY[@]} + 1))
-ITEM_TAG_ARRAY[$menu_item_index]=$menu_item_index
-ITEM_DESC_ARRAY[$menu_item_index]='Install "User Configuration"'
-ITEM_CMD_ARRAY[$menu_item_index]='install_config'
-ITEM_STATUS_ARRAY[$menu_item_index]='on'
+menu_item_index=$(( ${#ITEM_TAG_ARRAY[@]} + 1 ))
+ITEM_TAG_ARRAY["$menu_item_index"]=$menu_item_index
+ITEM_DESC_ARRAY["$menu_item_index"]='Install "User Configuration"'
+ITEM_CMD_ARRAY["$menu_item_index"]='install_config'
+ITEM_STATUS_ARRAY["$menu_item_index"]='on'
 
-# 安装便携工具 *******************************************************************
-menu_item_index=$(( ${#ITEM_TAG_ARRAY[@]} + 1))
-ITEM_TAG_ARRAY[$menu_item_index]=$menu_item_index
-ITEM_DESC_ARRAY[$menu_item_index]='Install "Portable Tools"'
-ITEM_CMD_ARRAY[$menu_item_index]='install_portable_tools'
-ITEM_STATUS_ARRAY[$menu_item_index]='on'
+# 安装工具 *******************************************************************
+menu_item_index=$(( ${#ITEM_TAG_ARRAY[@]} + 1 ))
+ITEM_TAG_ARRAY["$menu_item_index"]=$menu_item_index
+ITEM_DESC_ARRAY["$menu_item_index"]='Install Tools'
+ITEM_CMD_ARRAY["$menu_item_index"]='install_all_tools'
+ITEM_STATUS_ARRAY["$menu_item_index"]='on'
 
 
 # 安装通用工具包 *******************************************************************
@@ -99,7 +99,7 @@ install_config () {
     # 如果使用了 sudo，则将 Owner 指定为 sudoer
     set_tmp_file_permission "$data_dir"
     # 脚本安装位置
-    local scripts_root=$SOFT_ROOT/scripts
+    local scripts_root=$SOFT_ROOT/etc
     mkdir -p "$scripts_root" && bash "$data_dir/install_config.sh" "$scripts_root"
 }
 
@@ -113,6 +113,16 @@ install_rpm_package () {
     bash "$data_dir/install_rpm_package.sh"
 }
 
+install_rpm_package_rotless () {
+    local data_dir
+    data_dir="$TEMP_DIR/rpm"
+    mkdir -p "$data_dir"
+    untar_files_from_block_to_directory "$SCRIPT_FILE" RPM "$data_dir"
+    # 工具安装位置
+    local tool_root=$SOFT_ROOT
+    mkdir -p "$tool_root" && bash "$data_dir/install_rpm_package_rootless.sh" "$tool_root"
+}
+
 install_standalone_tools () {
     local data_dir
     data_dir="$TEMP_DIR/tools"
@@ -121,7 +131,7 @@ install_standalone_tools () {
     # 如果使用了 sudo，则将 Owner 指定为 sudoer
     set_tmp_file_permission "$TEMP_ROOT_DIR"
     # 工具安装位置
-    local tool_root=$SOFT_ROOT/tools
+    local tool_root=$SOFT_ROOT/usr/bin
     mkdir -p "$tool_root" && bash "$data_dir/install_standalone_tools.sh" "$tool_root"
 }
 
@@ -133,9 +143,14 @@ install_portable_tools () {
     # 如果使用了 sudo，则将 Owner 指定为 sudoer
     set_tmp_file_permission "$TEMP_ROOT_DIR"
     # 工具安装位置
-    local tool_root=$SOFT_ROOT/tools
+    local tool_root=$SOFT_ROOT/opt
     mkdir -p "$tool_root" && bash "$data_dir/install_portable_tools.sh" "$tool_root"
+}
+
+install_all_tools () {
+    install_portable_tools
     install_standalone_tools
+    install_rpm_package_rotless
 }
 
 install_docker_binary () {
@@ -172,7 +187,8 @@ fi
 read -ra user_input_array <<< "$user_input"
 
 # 软件安装的根位置
-SOFT_ROOT=~/mocha/opt
+# SOFT_ROOT=~/mocha/opt
+SOFT_ROOT=~/.local/mocha
 if ! SOFT_ROOT=$(LD_LIBRARY_PATH="$TEMP_DIR" "$TEMP_DIR/dialog" --stdout \
                     --title "Select the installation directory" \
                     --backtitle "System Initialization" \

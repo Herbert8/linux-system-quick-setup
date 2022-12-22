@@ -43,19 +43,29 @@ else
     chmod -R 700 "$TOOLS_DIR"
 fi
 
-# zoxide 配置
-ZOXIDE_TOOL=$TOOLS_DIR/zoxide
-ZOXIDE_CONFIG=~/.bashrc_zoxide
-if [[ -x "$ZOXIDE_TOOL" ]]; then
-    "$ZOXIDE_TOOL" init bash > "$ZOXIDE_CONFIG" && echo "source ~/.bashrc_zoxide" >> ~/.bashrc
-fi
-
 # broot 配置
 BROOT_TOOL=$TOOLS_DIR/broot
 if [[ -x "$BROOT_TOOL" ]]; then
     "$BROOT_TOOL" --install
 fi
 
+# 指定写入配置信息的文件，如果不具备写入权限则处理 ~/.bashrc
+ALIAS_FUNCTION_FILE=$TOOLS_DIR/../../etc/alias_function.sh
+[[ ! -w "$ALIAS_FUNCTION_FILE" ]] && ALIAS_FUNCTION_FILE=~/.bashrc
+
+
+# 插入 PATH
+SEARCH_PATH_TO_INSERT=${TOOLS_DIR/$HOME/'~'}
+[[ -w "$ALIAS_FUNCTION_FILE" ]] && echo "export PATH=$SEARCH_PATH_TO_INSERT:\$PATH" >> "$ALIAS_FUNCTION_FILE"
+
+
+# zoxide 配置
+ZOXIDE_TOOL=$TOOLS_DIR/zoxide
+# ZOXIDE_CONFIG=~/.bashrc_zoxide
+if [[ -x "$ZOXIDE_TOOL" ]]; then
+    # "$ZOXIDE_TOOL" init bash > "$ZOXIDE_CONFIG" && echo "source ~/.bashrc_zoxide" >> ~/.bashrc
+    echo 'eval "$(zoxide init bash)"' >> ~/.bashrc
+fi
 
 # 在 /usr/local/bin/ 创建 Symbolic Link
 # 为减少对系统的影响，创建 Symbolic Link 的动作只在需要时选用
