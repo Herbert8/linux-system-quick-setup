@@ -30,6 +30,7 @@ readonly TOOLS_DIR
 
 # 创建工具目录
 mkdir -p "$TOOLS_DIR"
+echo -ne "\033[2m"
 # 复制工具文件
 cp -vR "$BASE_DIR/$TOOLS_DIR_NAME"/* "$TOOLS_DIR/"
 # 如果通过 sudo 以 root 权限执行，则将所有权指定为执行 sudo 的用户
@@ -42,6 +43,7 @@ else
     # 对于使用 非 root 权限安装时，只为当前用户设置使用权限
     chmod -R 700 "$TOOLS_DIR"
 fi
+echo -ne "\033[0m"
 
 # broot 配置
 BROOT_TOOL=$TOOLS_DIR/broot

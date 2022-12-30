@@ -27,6 +27,7 @@ mkdir -p "$SCRIPTS_DIR"
 readonly BASH_PROMPT_STYLE_FILE_NAME='bash_prompt_style.sh'
 
 echo
+clear
 echo -e "\033[1mNetwork devices list:\033[0m"
 # 选择网络设备
 device=$(/bin/bash "$BASE_DIR/select_network_menu.sh")

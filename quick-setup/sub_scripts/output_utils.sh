@@ -46,3 +46,40 @@ print_without_scroll_screen () {
     while read -r line; do echo -ne "\033[1K\r\033[2m$line"; done; echo -e "\033[0m"
 }
 
+# 清理前面输出的指定行数
+clear_scroll_lines() {
+    local lines_count=${1:-}
+    [[ -z "$lines_count" ]] && return
+    echo -ne "\033[${lines_count}A"
+    for ((i = 0; i < lines_count; i++)); do
+        echo -e "\033[K"
+    done
+    echo -ne "\033[${lines_count}A"
+}
+
+# 在指定范围内滚动
+# 参考：https://zyxin.xyz/blog/2020-05/TerminalControlCharacters/
+print_scroll_in_range() {
+    # 默认最多显示滚动行数，默认为 8
+    local scroll_lines=${1:-8}
+    # 每行字符数，避免折行，默认 120
+    local chars_per_line=${2:-120}
+    local txt=''
+    local last_line_count=0
+    while read -r line; do
+        line=${line:0:$chars_per_line}
+        [[ "${last_line_count}" -gt "0" ]] && echo -ne "\033[${last_line_count}A"
+        if [[ -z "$txt" ]]; then
+            txt=$(echo -e "\033[2m$line\033[K" | tail -n"$scroll_lines")
+        else
+            txt=$(echo -e "$txt\n$line\033[K" | tail -n"$scroll_lines")
+        fi
+        last_line_count=$(($(wc -l <<<"$txt")))
+        echo "$txt"
+    done
+    echo -ne "\033[0m"
+    if [[ "$last_line_count" -gt "0" ]]; then
+        clear_scroll_lines "$last_line_count"
+    fi
+}
+

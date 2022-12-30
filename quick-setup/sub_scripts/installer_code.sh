@@ -26,7 +26,7 @@ else
     TEMP_ROOT_DIR=~/.local/mocha
 fi
 readonly TEMP_ROOT_DIR
-readonly TEMP_DIR=$TEMP_ROOT_DIR/.tmp/mp_inst
+readonly TEMP_DIR=$TEMP_ROOT_DIR/.cache/mp_inst
 
 mkdir -p "$TEMP_DIR"
 
@@ -42,10 +42,11 @@ install_dialog () {
 # $2 块名
 # $3 解压缩到的文件夹
 untar_files_from_block_to_directory () {
+    >&2 echo "Extracting '$2' block data to '$3' ..."
     mkdir -p "$3"
     extract_block_from_bash_script "$2" "$1" \
                      | tar -zxvf - -C "$3" 2>&1 \
-                     | print_without_scroll_screen
+                     | print_scroll_in_range 3
 }
 
 
