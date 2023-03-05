@@ -19,7 +19,7 @@ rm -rf "${OUTPUT_PATH:?}"/*
 
 
 # 下载的 vim 源码包
-VIM_SRC_ARCHIVE=v9.0.0950.tar.gz
+VIM_SRC_ARCHIVE=v9.0.1380.tar.gz
 VIM_TARGET_ARCHIVE=vim.tar
 
 # 下载
@@ -59,6 +59,8 @@ docker run -i --rm \
         chown -R $(id -u):$(id -g) /out/vim
 EOF
 
+# 生成版本信息
+echo "${VIM_SRC_ARCHIVE/.tar.gz/}" > "$OUTPUT_PATH/vim/VERSION"
 # 打包
 ( cd "$OUTPUT_PATH/vim" && gtar --exclude=.DS_Store -cf "$OUTPUT_PATH/$VIM_TARGET_ARCHIVE" -- * )
 
