@@ -58,7 +58,7 @@ COLOR_B_LIGHT_CYAN=106
 COLOR_B_WHITE=107
 
 # 网卡接口
-PROMPT_NETWORK_INTERFACE='#######_NETWORK_DEVICE_#######'
+PROMPT_NETWORK_INTERFACE=${1:-'#######_NETWORK_DEVICE_#######'}
 
 # 颜色相关 API ******************************************************************
 
