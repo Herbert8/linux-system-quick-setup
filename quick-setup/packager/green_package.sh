@@ -42,8 +42,11 @@ print_scroll_in_range() {
 # 准备并创建目录
 prepare_dir () {
     # 获取当前脚本所在位置
-    BASE_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+    BASE_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)
     readonly BASE_DIR
+
+    # 工具包文件名
+    tool_package_name=tools-pkg.tar.gz
 
     # 创建临时目录
     tmp_dir=$(mktemp -d)
@@ -109,7 +112,7 @@ package_files () {
     (
         echo 'Start packing files using tar ...'
         cd "$tmp_dir" &&
-            gtar zcvf pkg.tar.gz -- * | print_scroll_in_range 8 &&
+            gtar zcvf "$tool_package_name" -- * | print_scroll_in_range 8 &&
             echo 'Packing files are completed.'
     )
 }
@@ -119,17 +122,21 @@ gen_version_info () {
     local commit_id
     commit_id=$(git rev-parse HEAD)
 
+    # 文件变化数量
     local changed_file_count
     changed_file_count=$(git diff --name-only HEAD 2> /dev/null | wc -l | xargs)
 
-    local changed_file_count_str
+    # 文件变化数量字符串
+    local changed_file_count_str=''
     if [[ "$changed_file_count" -ne "0" ]]; then
         changed_file_count_str="{$changed_file_count}"
     fi
 
+    # 提交时间
     local commit_time
     commit_time=$(git show -s --format=%cd)
 
+    # 打包时间
     local package_time
     package_time=$(date -R)
 
@@ -176,7 +183,7 @@ main () {
     chmod +x "$tool_dir"/*
 
     # 复制用于配置的脚本
-    cp "$BASE_DIR/config_tools.sh" "$tmp_dir/"
+    cp "$BASE_DIR/configurator/configure.sh" "$tmp_dir/"
 
     # 版本信息
     gen_version_info > "$tmp_dir/VERSION"
@@ -185,11 +192,11 @@ main () {
     package_files
 
     # 复制打包后的文件
-    cp "$tmp_dir/pkg.tar.gz" "$BASE_DIR/dist/"
+    cp "$tmp_dir/$tool_package_name" "$BASE_DIR/dist/"
 
     echo
     # 上传服务器
-    upload_to_server "$BASE_DIR/dist/pkg.tar.gz"
+    upload_to_server "$BASE_DIR/dist/$tool_package_name"
 
     # 清理临时文件
     rm -rf "$tmp_dir"
