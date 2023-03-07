@@ -65,9 +65,13 @@ main () {
     export PATH=$BASE_DIR/tool:$BASE_DIR/tool/tmux:$BASE_DIR/tool/vim:$PATH
     export LD_LIBRARY_PATH=$BASE_DIR/tool/lib64:$LD_LIBRARY_PATH
 
+    # 配置目录
+    local config_dir=$BASE_DIR/.local/share/config
+    mkdir -p "$config_dir"
+
     # 选择网络设备
     local selected_network_device
-    local selected_network_device_file=$BASE_DIR/net_dev.cfg
+    local selected_network_device_file=$config_dir/network-device.cfg
     # 如果有存储了选择设备的文件，则从指定文件中读取
     if [[ -r "$selected_network_device_file" ]]; then
         selected_network_device=$(cat "$selected_network_device_file")
