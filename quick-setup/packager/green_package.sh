@@ -122,6 +122,9 @@ gen_version_info () {
     local commit_id
     commit_id=$(git rev-parse HEAD)
 
+    local ref_str
+    ref_str=$(git show -s --format=%d)
+
     # 文件变化数量
     local changed_file_count
     changed_file_count=$(git diff --name-only HEAD 2> /dev/null | wc -l | xargs)
@@ -142,9 +145,10 @@ gen_version_info () {
     package_time=$(date "+%Y-%m-%d %H:%M:%S %z")
 
     cat << EOF
-Commit ID:    $commit_id $changed_file_count_str
-Commit Date:  $commit_time
-Package Date: $package_time
+Commit ID    : $commit_id $changed_file_count_str
+Ref          : $ref_str
+Commit Date  : $commit_time
+Package Date : $package_time
 EOF
 
 }
