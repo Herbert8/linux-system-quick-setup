@@ -134,11 +134,12 @@ gen_version_info () {
 
     # 提交时间
     local commit_time
-    commit_time=$(git show -s --format=%cd)
+    # 格式参见 https://blog.csdn.net/liurizhou/article/details/89234032
+    commit_time=$(git show -s --format=%ai)
 
     # 打包时间
     local package_time
-    package_time=$(date -R)
+    package_time=$(date "+%Y-%m-%d %H:%M:%S %z")
 
     cat << EOF
 Commit ID:    $commit_id $changed_file_count_str
