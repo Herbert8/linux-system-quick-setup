@@ -42,6 +42,6 @@ rm -rf "$tmp_dir"
 
 # 打包
 (
-    cd "$OUTPUT_PATH" && gtar --exclude=.DS_Store --remove-files -zcvf tmux.tar.gz -- *
+    cd "$OUTPUT_PATH" && gtar --exclude=.DS_Store --remove-files -zcvf tmux_3.3.tar.gz -- *
 )
 

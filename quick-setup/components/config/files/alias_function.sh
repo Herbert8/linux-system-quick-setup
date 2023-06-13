@@ -1,8 +1,13 @@
 
 
 alias ll='ls -lp --time-style=long-iso --group-directories-first --color=auto'
+alias llh='ll -h'
+alias lla='ll -a'
 
-which exa &>/dev/null && {
+treeex='tree --dirsfirst -CF'
+treeexansi='tree --charset ansi --dirsfirst -CF'
+
+command -v exa > /dev/null && {
     alias lle='exa -Fghl --time-style=long-iso --group-directories-first --color-scale'
     alias llea='exa -aFghl --time-style=long-iso --group-directories-first --color-scale'
 }
@@ -37,6 +42,26 @@ whichex () {
 
 llex () {
     ls -alp --time-style=long-iso --group-directories-first --color=auto "$(readlink -f "$(which "$1")")"
+}
+
+# 进入文件所在目录
+cdf () {
+    local filename=${1:-}
+    local pathname
+    pathname=$(dirname "$filename")
+    cd "$pathname"
+}
+
+# 进入文件真实位置所在目录
+cdrf () {
+    local filename=${1:-}
+    if real_filename=$(readlink -f "$filename"); then
+        # readlink -f 只有在目录存在时才返回成功，这时执行 cd
+        cdf "$real_filename"
+    else
+        # 否则报错
+        cd "$(dirname "$filename")"
+    fi
 }
 
 # 计算本地时间比指定 Web 服务器“快”多少

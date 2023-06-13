@@ -17,18 +17,24 @@ OUTPUT_PATH=$BASE_DIR/out
 mkdir -p "$OUTPUT_PATH"
 rm -rf "${OUTPUT_PATH:?}"/*
 
+# vim 版本
+VIM_VERSION='v9.0.1572'
 
 # 下载的 vim 源码包
-VIM_SRC_ARCHIVE=v9.0.1380.tar.gz
-VIM_TARGET_ARCHIVE=vim.tar
+VIM_SRC_ARCHIVE=$VIM_VERSION.tar.gz
+VIM_TARGET_ARCHIVE=vim_$VIM_VERSION.tar
+VIM_LITE_TARGET_ARCHIVE=vim_lite_$VIM_VERSION.tar
 
 # 下载
 # GitHub 仓库位置：https://github.com/vim/vim
 # 下载位置： https://github.com/vim/vim/archive/版本.tar.gz"
-cd "$OUTPUT_PATH" && curl -x http://127.0.0.1:8888 -OL "https://github.com/vim/vim/archive/${VIM_SRC_ARCHIVE}"
+PROXY_SERVER=http://192.168.50.100:8888
+cd "$OUTPUT_PATH" && curl -x "$PROXY_SERVER" -OL "https://github.com/vim/vim/archive/${VIM_SRC_ARCHIVE}"
 
 # 在 Docker 中编译 vim
 docker run -i --rm \
+    -e http_proxy=$PROXY_SERVER \
+    -e https_proxy=$PROXY_SERVER \
     -v "$OUTPUT_PATH":/out \
     -w /vimbuildcache alpine /bin/sh << EOF
         mv /out/* ./
@@ -60,16 +66,31 @@ docker run -i --rm \
 EOF
 
 # 生成版本信息
-echo "${VIM_SRC_ARCHIVE/.tar.gz/}" > "$OUTPUT_PATH/vim/VERSION"
-# 打包
-( cd "$OUTPUT_PATH/vim" && gtar --exclude=.DS_Store -cf "$OUTPUT_PATH/$VIM_TARGET_ARCHIVE" -- * )
+echo "$VIM_VERSION" > "$OUTPUT_PATH/vim/VERSION"
 
+# 打包 =========================================================================
+( cd "$OUTPUT_PATH/vim" && gtar --exclude=.DS_Store -cf "$OUTPUT_PATH/$VIM_TARGET_ARCHIVE" -- * )
 # 将用于运行的脚本存档
 ( cd "$BASE_DIR/misc" && gtar rvf "$OUTPUT_PATH/$VIM_TARGET_ARCHIVE" -- * )
 
+# 整理 Lite 版本
+cp "$OUTPUT_PATH/$VIM_TARGET_ARCHIVE" "$OUTPUT_PATH/$VIM_LITE_TARGET_ARCHIVE"
+gtar --delete 'share/vim/vim90/doc' \
+     --delete 'share/vim/vim90/spell' \
+     --delete 'share/vim/vim90/tutor' \
+     --delete 'share/vim/vim90/ftplugin' \
+     --delete 'share/vim/vim90/pack' \
+     --delete 'share/vim/vim90/compiler' \
+     --delete 'share/vim/vim90/tools' \
+     --delete 'share/vim/vim90/print' \
+     --delete 'share/vim/vim90/plugin' \
+    -vf "$OUTPUT_PATH/$VIM_LITE_TARGET_ARCHIVE"
+
 # 压缩
 gzip "$OUTPUT_PATH/$VIM_TARGET_ARCHIVE"
+gzip "$OUTPUT_PATH/$VIM_LITE_TARGET_ARCHIVE"
 
+# 清理
 rm -rf "${OUTPUT_PATH:?}"/vim
 
 

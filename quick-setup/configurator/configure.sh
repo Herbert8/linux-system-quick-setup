@@ -56,6 +56,10 @@ select_network_device () {
     echo "$selected_item"
 }
 
+detect_network_device () {
+    ip a s | grep 'inet .*noprefixroute' > /dev/null
+}
+
 main () {
 
     # 准备相关目录
@@ -65,21 +69,24 @@ main () {
     export PATH=$BASE_DIR/tool:$BASE_DIR/tool/tmux:$BASE_DIR/tool/vim:$PATH
     export LD_LIBRARY_PATH=$BASE_DIR/tool/lib64:$LD_LIBRARY_PATH
 
-    # 配置目录
-    local config_dir=$BASE_DIR/.local/share/config
-    mkdir -p "$config_dir"
+    # 如果 不能 成功检测到使用的网络设备，则执行用户选择网络设备的逻辑
+    if ! detect_network_device; then
+        # 配置目录
+        local config_dir=$BASE_DIR/.local/share/config
+        mkdir -p "$config_dir"
 
-    # 选择网络设备
-    local selected_network_device
-    local selected_network_device_file=$config_dir/network-device.cfg
-    # 如果有存储了选择设备的文件，则从指定文件中读取
-    if [[ -r "$selected_network_device_file" ]]; then
-        selected_network_device=$(cat "$selected_network_device_file")
-    else
-        # 否则用户选择
-        selected_network_device=$(select_network_device)
-        # 保存用户选择
-        echo "$selected_network_device" > "$selected_network_device_file"
+        # 选择网络设备
+        local selected_network_device
+        local selected_network_device_file=$config_dir/network-device.cfg
+        # 如果有存储了选择设备的文件，则从指定文件中读取
+        if [[ -r "$selected_network_device_file" ]]; then
+            selected_network_device=$(cat "$selected_network_device_file")
+        else
+            # 否则用户选择
+            selected_network_device=$(select_network_device)
+            # 保存用户选择
+            echo "$selected_network_device" > "$selected_network_device_file"
+        fi
     fi
 
 
