@@ -94,6 +94,8 @@ process_rpms () {
         cp -vR "$work_dir/usr/bin"/* "$tool_dir"/ | print_scroll_in_range 3
         cp -vR "$work_dir/usr/sbin"/* "$tool_dir"/ | print_scroll_in_range 3
         cp -vR "$work_dir/usr/lib64" "$tool_dir"/ | print_scroll_in_range 3
+        cp -vR "$work_dir/bin"/* "$tool_dir"/ | print_scroll_in_range 3
+        cp -vR "$work_dir/sbin"/* "$tool_dir"/ | print_scroll_in_range 3
     } && echo -e 'Copy binary files completed.\n'
 
 
