@@ -24,7 +24,7 @@ set showmode
 set showcmd
 
 " 支持使用鼠标。
-" set mouse=a
+set mouse=a
 
 " 使用 utf-8 编码。
 set encoding=utf-8
@@ -96,5 +96,24 @@ set softtabstop=4
 "set listchars=eol:↩︎,tab:->,trail:␣
 set listchars=tab:->,trail:␣
 set list
+
+
+" 参考 NERDTree 插件配置
+" vim插件 NERDTree安装使用
+" https://juejin.cn/post/6844903745776517134
+autocmd VimEnter * NERDTree
+
+let NERDTreeAutoCenter=1
+let NERDTreeBookmarksFile=$VIM.'\Data\NerdBookmarks.txt'
+let NERDTreeMouseMode=2
+let NERDTreeShowBookmarks=1
+let NERDTreeShowFiles=1
+let NERDTreeShowHidden=1
+let NERDTreeShowLineNumbers=1
+let NERDTreeWinPos='left'
+let NERDTreeWinSize=31
+
+map <F10> :NERDTreeMirror<CR>
+map <F10> :NERDTreeToggle<CR>
 
 

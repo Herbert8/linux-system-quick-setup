@@ -159,7 +159,7 @@ upload_to_server () {
     if ncat -w2 -zv 192.168.200.99 22; then
         local installer_package=$1
         local server_str='bahb@192.168.200.99'
-        local server_path='/home/bahb/tmp/'
+        local server_path='/home/bahb/playground/commontools/'
         echo Uploading "'$installer_package'" to "'$server_str:$server_path'..."
         sshpass -p 1 ssh "$server_str" "mkdir -p '$server_path'; rm -rf '$server_path'/*; " &&
         sshpass -p 1 scp -r "$installer_package" "$server_str:$server_path" &&
