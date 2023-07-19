@@ -101,7 +101,7 @@ set list
 " 参考 NERDTree 插件配置
 " vim插件 NERDTree安装使用
 " https://juejin.cn/post/6844903745776517134
-autocmd VimEnter * NERDTree
+" autocmd VimEnter * NERDTree
 
 let NERDTreeAutoCenter=1
 let NERDTreeBookmarksFile=$VIM.'\Data\NerdBookmarks.txt'

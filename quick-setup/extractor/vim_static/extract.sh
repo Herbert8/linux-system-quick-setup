@@ -15,10 +15,18 @@ install_package () {
     tmp_dir=$(mktemp -d)
     local target_dir=$OUTPUT_PATH/vim/share/vim/vim90/pack/vendor/start/$folder_name
     mkdir -p "$target_dir"
-    if git clone "$package_url" "$tmp_dir"; then
+    if http_proxy="$PROXY_SERVER" https_proxy="$PROXY_SERVER" git clone "$package_url" "$tmp_dir"; then
         cp -vR "$tmp_dir"/* "$target_dir"/
+    else
+        >&2 echo 'Error: Fetch NERDTree fail.'
     fi
     rm -rf "$tmp_dir"
+}
+
+get_latest_tag () {
+    local rest_ret
+    rest_ret=$(curl -sSLf https://api.github.com/repos/vim/vim/tags)
+    echo "$rest_ret" | grep name | head -n1 | sed -nr 's/.*: "(.*)".*/\1/p'
 }
 
 main() {
@@ -33,18 +41,27 @@ main() {
     rm -rf "${OUTPUT_PATH:?}"/*
 
     # vim 版本
-    VIM_VERSION='v9.0.1637'
+    # VIM_VERSION='v9.0.1670'
+    if ! VIM_VERSION=$(get_latest_tag); then
+        >&2 echo Get latest tag error.
+        exit 1
+    fi
+
+    echo "Latest tag: $VIM_VERSION"
+    echo
 
     # 下载的 vim 源码包
     VIM_SRC_ARCHIVE=$VIM_VERSION.tar.gz
-    VIM_TARGET_ARCHIVE=vim_$VIM_VERSION.tar
+    VIM_FULL_TARGET_ARCHIVE=vim_full_$VIM_VERSION.tar
     VIM_LITE_TARGET_ARCHIVE=vim_lite_$VIM_VERSION.tar
 
     # 下载
     # GitHub 仓库位置：https://github.com/vim/vim
     # 下载位置： https://github.com/vim/vim/archive/版本.tar.gz"
     PROXY_SERVER=http://192.168.50.100:8888
-    cd "$OUTPUT_PATH" && curl -x "$PROXY_SERVER" -OL "https://github.com/vim/vim/archive/${VIM_SRC_ARCHIVE}"
+    SOURCE_CODE_URL=https://github.com/vim/vim/archive/${VIM_SRC_ARCHIVE}
+    echo "Downloading source from [$SOURCE_CODE_URL]"
+    cd "$OUTPUT_PATH" && curl -x "$PROXY_SERVER" -fOL "$SOURCE_CODE_URL"
 
     # 查找用于构建 vim 的镜像
     local img_name='vim-build-env'
@@ -67,7 +84,7 @@ EOF
         -v "$OUTPUT_PATH":/out \
         -w /vimbuildcache "${img_name}:${img_tag}" /bin/sh <<EOF
         mv /out/* ./
-        # apk add gcc make musl-dev ncurses-static
+        apk add gcc make musl-dev ncurses-static
         tar xvfz "${VIM_SRC_ARCHIVE}"
         cd vim-*
         LDFLAGS="-static" ./configure \
@@ -97,16 +114,19 @@ EOF
     # 生成版本信息
     echo "$VIM_VERSION" > "$OUTPUT_PATH/vim/VERSION"
 
+    echo 'Installing NERDTree...'
+    echo
     # 安装 NERDTree
     install_package 'https://github.com/preservim/nerdtree.git' 'nerdtree'
 
+    echo 'Packaging...'
     # 打包 =========================================================================
-    (cd "$OUTPUT_PATH/vim" && gtar --exclude=.DS_Store -cf "$OUTPUT_PATH/$VIM_TARGET_ARCHIVE" -- *)
+    (cd "$OUTPUT_PATH/vim" && gtar --exclude=.DS_Store -cf "$OUTPUT_PATH/$VIM_FULL_TARGET_ARCHIVE" -- *)
     # 将用于运行的脚本存档
-    (cd "$BASE_DIR/misc" && gtar rvf "$OUTPUT_PATH/$VIM_TARGET_ARCHIVE" -- *)
+    (cd "$BASE_DIR/misc" && gtar rvf "$OUTPUT_PATH/$VIM_FULL_TARGET_ARCHIVE" -- *)
 
     # 整理 Lite 版本
-    cp "$OUTPUT_PATH/$VIM_TARGET_ARCHIVE" "$OUTPUT_PATH/$VIM_LITE_TARGET_ARCHIVE"
+    cp "$OUTPUT_PATH/$VIM_FULL_TARGET_ARCHIVE" "$OUTPUT_PATH/$VIM_LITE_TARGET_ARCHIVE"
     gtar --delete 'share/vim/vim90/doc' \
         --delete 'share/vim/vim90/spell' \
         --delete 'share/vim/vim90/tutor' \
@@ -121,11 +141,13 @@ EOF
     #  --delete 'share/vim/vim90/plugin' \
 
     # 压缩
-    gzip "$OUTPUT_PATH/$VIM_TARGET_ARCHIVE"
+    gzip "$OUTPUT_PATH/$VIM_FULL_TARGET_ARCHIVE"
     gzip "$OUTPUT_PATH/$VIM_LITE_TARGET_ARCHIVE"
 
     # 清理
     rm -rf "${OUTPUT_PATH:?}"/vim
+
+    echo -e "Extract vim $VIM_VERSION completed.\nSource code location: $SOURCE_CODE_URL"
 
 }
 

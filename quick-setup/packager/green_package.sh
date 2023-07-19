@@ -42,22 +42,23 @@ print_scroll_in_range() {
 # 准备并创建目录
 prepare_dir () {
     # 获取当前脚本所在位置
-    BASE_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)
-    readonly BASE_DIR
+    BASE_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+    PROJECT_ROOT=$BASE_DIR/..
+    readonly PROJECT_ROOT
 
     # 工具包文件名
     tool_package_name=tools-pkg.tar.gz
 
     # 创建临时目录
-    tmp_dir=$(mktemp -d)
-    # echo "$tmp_dir"
+    TMP_DIR=$(mktemp -d)
+    # echo "$TMP_DIR"
 
     # 工具目录
-    tool_dir=$tmp_dir/tool
+    TOOL_DIR=$TMP_DIR/tool
     # 脚本目录
-    script_dir=$tmp_dir/script
+    script_dir=$TMP_DIR/script
 
-    mkdir -p "$tool_dir"
+    mkdir -p "$TOOL_DIR"
     mkdir -p "$script_dir"
 }
 
@@ -68,7 +69,7 @@ extract_package () {
         local pkg_name
         pkg_name=$(basename "$pkg_full_name" '.tar.gz')
         local pkg_path
-        pkg_path=$tool_dir/$pkg_name
+        pkg_path=$TOOL_DIR/$pkg_name
         mkdir -p "$pkg_path" && tar zxf "$pkg_full_name" -C "$pkg_path"
     fi
 }
@@ -77,9 +78,11 @@ extract_package () {
 # 第一个参数指定 rpm 包所在目录
 process_rpms () {
     local rpm_dir=${1:-'.'}
-    local work_dir=$tmp_dir/work
+    local work_dir=$TMP_DIR/work
     mkdir -p "$work_dir/usr/bin"
     mkdir -p "$work_dir/usr/sbin"
+    local epel_tool_dir=$TOOL_DIR/epel
+    mkdir -p "$epel_tool_dir"
     # 遍历 rpm 包，解压缩到临时目录
     find "$rpm_dir" -type f -name '*.rpm' | while read -r item; do
         (
@@ -91,31 +94,37 @@ process_rpms () {
     done
     echo 'Copy binary files from "/usr/bin" "/usr/sbin" "/usr/lib64" ...'
     {
-        cp -vR "$work_dir/usr/bin"/* "$tool_dir"/ | print_scroll_in_range 3
-        cp -vR "$work_dir/usr/sbin"/* "$tool_dir"/ | print_scroll_in_range 3
-        cp -vR "$work_dir/usr/lib64" "$tool_dir"/ | print_scroll_in_range 3
-        cp -vR "$work_dir/bin"/* "$tool_dir"/ | print_scroll_in_range 3
-        cp -vR "$work_dir/sbin"/* "$tool_dir"/ | print_scroll_in_range 3
+        cp -vR "$work_dir/usr/bin"/* "$epel_tool_dir"/ | print_scroll_in_range 3
+        cp -vR "$work_dir/usr/sbin"/* "$epel_tool_dir"/ | print_scroll_in_range 3
+        cp -vR "$work_dir/usr/lib64" "$epel_tool_dir"/ | print_scroll_in_range 3
+        cp -vR "$work_dir/usr/libexec" "$epel_tool_dir"/ | print_scroll_in_range 3
+        cp -vR "$work_dir/bin"/* "$epel_tool_dir"/ | print_scroll_in_range 3
+        cp -vR "$work_dir/sbin"/* "$epel_tool_dir"/ | print_scroll_in_range 3
     } && echo -e 'Copy binary files completed.\n'
 
+    # [[ -f "$epel_tool_dir"/curl ]] && mv "$epel_tool_dir"/curl "$epel_tool_dir"/curl8
 
     # 清理工作目录
     rm -rf "$work_dir"
 }
 
 process_portable_tool () {
-    local portable_dir=${1:-'.'}
+    local portable_dir=$TMP_DIR/portable_tools
+    mkdir -p "$portable_dir"
+    cp "$PROJECT_ROOT/extractor/vim_static/out"/vim_full*.tar.gz "$portable_dir"/vim.tar.gz
+    cp "$PROJECT_ROOT/extractor/tmux/out"/tmux*.tar.gz "$portable_dir"/tmux.tar.gz
     find "$portable_dir" -type f -name '*.tar.gz' | while read -r tool_pkg; do
         extract_package "$tool_pkg"
     done
+    rm -rf "$portable_dir"
 }
 
 package_files () {
     (
         echo 'Start packing files using tar ...'
-        cd "$tmp_dir" &&
-            gtar zcvf "$tool_package_name" -- * | print_scroll_in_range 8 &&
-            echo 'Packing files are completed.'
+        cd "$TMP_DIR" \
+            && gtar zcf "$tool_package_name" -- * | print_scroll_in_range 8 \
+            && echo 'Packing files are completed.'
     )
 }
 
@@ -161,10 +170,44 @@ upload_to_server () {
         local server_str='bahb@192.168.200.99'
         local server_path='/home/bahb/playground/commontools/'
         echo Uploading "'$installer_package'" to "'$server_str:$server_path'..."
-        sshpass -p 1 ssh "$server_str" "mkdir -p '$server_path'; rm -rf '$server_path'/*; " &&
-        sshpass -p 1 scp -r "$installer_package" "$server_str:$server_path" &&
-        echo upload complete.
+        sshpass -p 1 ssh "$server_str" "mkdir -p '$server_path'; rm -rf '$server_path'/*; " \
+            && sshpass -p 1 scp -r "$installer_package" "$server_str:$server_path" \
+            && sshpass -p 1 ssh "$server_str" "cd '$server_path' && tar zxf *.tar.gz " | print_scroll_in_range 8 \
+            && echo upload complete.
     fi
+}
+
+select_standalone_tool () {
+    (
+        cd "$PROJECT_ROOT/all_components_superset/standalone_tools/standalone_tools" && \
+            cp -v bandwhich \
+                7zz \
+                bat \
+                broot \
+                btop \
+                coreutils \
+                curl8 \
+                curlie \
+                delta \
+                duf \
+                dust \
+                exa \
+                fd \
+                fx \
+                fzf \
+                gitui \
+                hexyl \
+                httpbingo \
+                lf \
+                mcfly \
+                ncdu \
+                procs \
+                rg \
+                websocat \
+                yq \
+                zoxide \
+                "$TOOL_DIR"/
+    )
 }
 
 main () {
@@ -172,47 +215,55 @@ main () {
     # 准备目录
     prepare_dir
 
-    echo "Working in '$tmp_dir'."
+    echo "Working in '$TMP_DIR'."
     echo
 
     # 先处理可以独立运行的工具
-    cp -vR "$BASE_DIR/components/standalone_tools/standalone_tools"/* "$tool_dir"/ | print_scroll_in_range 8
+    select_standalone_tool | print_scroll_in_range 8
+
     # 复制脚本
-    cp -vR "$BASE_DIR/components/config/files/alias_function.sh" "$BASE_DIR/components/config/files/bash_prompt_style.sh" "$script_dir"/ | print_scroll_in_range 8
+    cp -vR "$PROJECT_ROOT/components/config/files/alias_function.sh" \
+            "$PROJECT_ROOT/components/config/files/bash_prompt_style.sh" \
+            "$PROJECT_ROOT/components/config/files/ca-certificates.crt" \
+            "$script_dir"/ | print_scroll_in_range 8
 
     # 处理 rpm 文件
-    process_rpms "$BASE_DIR/components/rpm/packages"
+    process_rpms "$PROJECT_ROOT/components/rpm/packages"
 
+    # 如果带有 vim 参数，则重新构建 vim
+    if [[ "vim" == "${1:-}" ]]; then
+        bash "$PROJECT_ROOT/extractor/vim_static/extract.sh" | print_scroll_in_range 15
+    fi
     # 处理便携工具
-    process_portable_tool "$BASE_DIR/components/portable_tools/portable_tools" | print_scroll_in_range 8
+    process_portable_tool | print_scroll_in_range 8
 
     # 增加可执行权限
-    chmod +x "$tool_dir"/*
+    chmod +x "$TOOL_DIR"/*
 
     # 复制用于配置的脚本
-    cp "$BASE_DIR/configurator/configure.sh" "$tmp_dir/"
+    cp "$PROJECT_ROOT/configurator/configure.sh" "$TMP_DIR/"
 
     # 版本信息
-    gen_version_info > "$tmp_dir/VERSION"
+    gen_version_info > "$TMP_DIR/VERSION"
 
     # 打包
     package_files
 
     # 复制打包后的文件
-    cp "$tmp_dir/$tool_package_name" "$BASE_DIR/dist/"
+    cp "$TMP_DIR/$tool_package_name" "$PROJECT_ROOT/dist/"
 
     echo
     # 上传服务器
-    upload_to_server "$BASE_DIR/dist/$tool_package_name"
+    upload_to_server "$PROJECT_ROOT/dist/$tool_package_name"
 
     # 清理临时文件
-    rm -rf "$tmp_dir"
+    rm -rf "$TMP_DIR"
 
 }
 
-main
+main "$@"
 
 # echo '=========================================================================='
 
-# echo "$tmp_dir"
-# open "$tmp_dir"
+# echo "$TMP_DIR"
+# open "$TMP_DIR"

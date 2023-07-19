@@ -119,16 +119,20 @@ prompt_host () {
 
 # 获取 IP 的命令
 get_ip_addr () {
-    local local_ip
-    # 如果没有指定设备则自动检测
-    if [[ -z "${PROMPT_NETWORK_INTERFACE}" ]]; then
-        local_ip=$(/usr/sbin/ip address show | sed -nr 's/.*inet (a)?(([0-9]*\.){3}[0-9].*) brd.*noprefixroute.*/\2/p')
-    else # 指定了设备就读取指定设备
-        local_ip=$(/usr/sbin/ip address show "${PROMPT_NETWORK_INTERFACE}" | sed -nr 's/.*inet (addr:)?(([0-9]*\.){3}[0-9].*) brd.*/\2/p')
+    if [[ -x '/usr/sbin/ip' ]]; then
+        local local_ip
+        # 如果没有指定设备则自动检测
+        if [[ -z "${PROMPT_NETWORK_INTERFACE}" ]]; then
+            local_ip=$(/usr/sbin/ip address show | sed -nr 's/.*inet (a)?(([0-9]*\.){3}[0-9].*) brd.*noprefixroute.*/\2/p')
+        else # 指定了设备就读取指定设备
+            local_ip=$(/usr/sbin/ip address show "${PROMPT_NETWORK_INTERFACE}" | sed -nr 's/.*inet (addr:)?(([0-9]*\.){3}[0-9].*) brd.*/\2/p')
+        fi
+        # 清理换行符
+        local_ip=${local_ip/$'\n'/ }
+        echo "$local_ip"
+    else
+        echo -n ''
     fi
-    # 清理换行符
-    local_ip=${local_ip/$'\n'/ }
-    echo "$local_ip"
 }
 
 prompt_ip_addr () {
