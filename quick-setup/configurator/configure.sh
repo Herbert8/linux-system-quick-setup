@@ -171,7 +171,7 @@ create_alias_for_all_epel () {
     # find "$EPEL_TOOL_DIR" -type f | while read -r file_item; do
     # 使用先获取所有信息，再读取的方式，避免 子 Shell
     local all_files
-    all_files=$(find "$EPEL_TOOL_DIR" -type f)
+    all_files=$(find "$EPEL_TOOL_DIR" -maxdepth 1 -type f)
     local ifs_bak=IFS
 
     IFS=$'\n'

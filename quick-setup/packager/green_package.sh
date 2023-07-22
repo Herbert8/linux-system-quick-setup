@@ -74,35 +74,75 @@ extract_package () {
     fi
 }
 
+# 获取目录中的文件数量，不包含隐藏文件。访问失败或目录不存在，则认为没有文件
+file_count_in_dir () {
+    ls "$1" 2>/dev/null | wc -l
+}
+
+dir_contain_file () {
+    local file_count
+    file_count=$(file_count_in_dir "$1")
+    [[ '0' -lt "$file_count" ]]
+}
+
+# 处理一个 rpm 包
+# $1 要处理的 rpm 包
+# $2 工作目录
+process_one_rpm () {
+    local a_rpm=$1
+    local work_path=$2
+    (
+        cd "$work_path" \
+            && echo "Processing '$(basename "$a_rpm")' ..." \
+            && rpm2cpio "$a_rpm" | cpio -div 2>&1 | print_scroll_in_range 3 \
+            && echo -e "Process '$(basename "$a_rpm")' complete.\n"
+    )
+}
+
 # 处理指定目录中的 *.rpm 包
 # 第一个参数指定 rpm 包所在目录
 process_rpms () {
+
+    cp_files () {
+        local src_dir=$1
+        local dest_dir=$2
+        mkdir -p "$dest_dir"
+        if dir_contain_file "$src_dir"; then
+            cp -vR "$src_dir"/* "$dest_dir" | print_scroll_in_range 3
+        fi
+    }
+
     local rpm_dir=${1:-'.'}
     local work_dir=$TMP_DIR/work
-    mkdir -p "$work_dir/usr/bin"
-    mkdir -p "$work_dir/usr/sbin"
     local epel_tool_dir=$TOOL_DIR/epel
     mkdir -p "$epel_tool_dir"
     # 遍历 rpm 包，解压缩到临时目录
-    find "$rpm_dir" -type f -name '*.rpm' | while read -r item; do
-        (
-            cd "$work_dir" \
-                && echo "Processing '$(basename "$item")' ..." \
-                && rpm2cpio "$item" | cpio -div 2>&1 | print_scroll_in_range 3 \
-                && echo -e "Process '$(basename "$item")' complete.\n"
-        )
+    # 遍历方式：先遍历文件夹，再遍历文件夹中的 rpm 包。目的是把相同文件夹中的rpm包作为一组工具处理
+    # 如果没有提供依赖库，则放到 standalone 工具目录中
+    find "$rpm_dir" -type d -name '*' | while read -r dir_item; do
+        mkdir -p "$work_dir/usr/bin"
+        mkdir -p "$work_dir/usr/sbin"
+        find "$dir_item" -maxdepth 1 -type f -name '*.rpm' | while read -r rpm_item; do
+            process_one_rpm "$rpm_item" "$work_dir"
+        done
+        # 判断库目录是否存在或者目录中是否存在文件，决定作为独立工具处理，还是 epel 工具处理
+        local rpm_tool_dir
+        if dir_contain_file "$work_dir/usr/lib64"; then
+            rpm_tool_dir=$epel_tool_dir
+        else
+            rpm_tool_dir=$TOOL_DIR
+        fi
+        # echo 'Copy binary files from "/usr/bin" "/usr/sbin" "/usr/lib64" ...'
+        # {
+            cp_files "$work_dir/usr/bin"      "$rpm_tool_dir"
+            cp_files "$work_dir/usr/sbin"     "$rpm_tool_dir"
+            cp_files "$work_dir/usr/lib64"    "$rpm_tool_dir/lib64"
+            cp_files "$work_dir/usr/libexec"  "$rpm_tool_dir/libexec"
+            cp_files "$work_dir/bin"          "$rpm_tool_dir"
+            cp_files "$work_dir/sbin"         "$rpm_tool_dir"
+        # } && echo -e 'Copy binary files completed.\n'
+        rm -rf "$work_dir"
     done
-    echo 'Copy binary files from "/usr/bin" "/usr/sbin" "/usr/lib64" ...'
-    {
-        cp -vR "$work_dir/usr/bin"/* "$epel_tool_dir"/ | print_scroll_in_range 3
-        cp -vR "$work_dir/usr/sbin"/* "$epel_tool_dir"/ | print_scroll_in_range 3
-        cp -vR "$work_dir/usr/lib64" "$epel_tool_dir"/ | print_scroll_in_range 3
-        cp -vR "$work_dir/usr/libexec" "$epel_tool_dir"/ | print_scroll_in_range 3
-        cp -vR "$work_dir/bin"/* "$epel_tool_dir"/ | print_scroll_in_range 3
-        cp -vR "$work_dir/sbin"/* "$epel_tool_dir"/ | print_scroll_in_range 3
-    } && echo -e 'Copy binary files completed.\n'
-
-    # [[ -f "$epel_tool_dir"/curl ]] && mv "$epel_tool_dir"/curl "$epel_tool_dir"/curl8
 
     # 清理工作目录
     rm -rf "$work_dir"

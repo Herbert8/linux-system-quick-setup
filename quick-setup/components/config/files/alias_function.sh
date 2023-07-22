@@ -4,8 +4,8 @@ alias ll='ls -lp --time-style=long-iso --group-directories-first --color=auto'
 alias llh='ll -h'
 alias lla='ll -a'
 
-alias treex='treee --dirsfirst -CF'
-alias treexansi='treee --charset ansi --dirsfirst -CF'
+alias treex='tree --dirsfirst -CF'
+alias treexansi='tree --charset ansi --dirsfirst -CF'
 
 command -v exa > /dev/null && {
     alias lle='exa -Fghl --time-style=long-iso --group-directories-first --color-scale'
