@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# 获取当前脚本所在位置
+SCRIPT_FILE=$(readlink -f "${BASH_SOURCE[0]}")
+BASE_DIR=$(dirname "$SCRIPT_FILE")
+readonly SCRIPT_FILE
+readonly BASE_DIR
+
+JQ_ROOT=$BASE_DIR
+
+LD_LIBRARY_PATH=$JQ_ROOT/lib64 "$JQ_ROOT/bin/jq" "$@"
+

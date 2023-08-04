@@ -1,0 +1,174 @@
+#!/bin/bash
+
+# 此脚本用于在 Linux 上执行
+# 解压后执行此脚本，或自动执行安装
+
+set -eu
+
+# 判断系统是否为 RUEL7 或者 CentOS7
+if ! uname -a | grep el7 &>/dev/null; then
+    >&2 echo 'OS must be RHEL7 or CentOS7.'
+    exit 1
+fi
+
+# 备份文件
+backup_file () {
+    local filename=$1
+    if [[ -f "$filename" ]]; then
+        cp "$filename" "${filename}.bak_$TIMESTAMP"
+    fi
+}
+
+# 备份目录
+backup_dir () {
+    local path=$1
+    if [[ -d "$path" ]]; then
+        cp -R "$path" "${path}.bak_$TIMESTAMP"
+    fi
+}
+
+
+# 脚本所在目录
+INSTALLER_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+readonly INSTALLER_DIR
+
+# dialog.sh 脚本
+DIALOG_TOOL=$INSTALLER_DIR/files/dialog.sh
+if [[ -f "$DIALOG_TOOL" ]]; then
+    source "$DIALOG_TOOL" || exit 1
+else
+    >&2 echo -e 'Installer components are not complete.\n'
+fi
+
+# 通过参数获取 OpenResty 的根路径，然后执行安装
+# 如果没有指定参数，则使用上一级目录
+REDIS_ROOT=${1:-$INSTALLER_DIR/..}
+REDIS_ROOT=$(readlink -f "$REDIS_ROOT")
+
+# 以当前时间作为时间戳
+TIMESTAMP_CMD='date +%Y%m%d%H%M%S'
+TIMESTAMP=$($TIMESTAMP_CMD)
+
+# 判断目标文件是否存在
+if [[ ! -d "$REDIS_ROOT" ]]; then
+    >&2 echo -e 'Redis Root Directory does not exist.\n'
+    exit 1
+fi
+
+# 初始化配置文件相关位置
+USER_CONFIG_ENV_FILE=$INSTALLER_DIR/files/user_config.env
+USER_CONFIG_ENV_FILE_TEMPLATE=$INSTALLER_DIR/files/template/user_config.tpl
+
+# 初始化用到的环境变量
+export PORT=16379
+export WORK_DIR='workspace'
+export PASSWORD=1qaz@WSX
+export RDB_FILE_NAME=dump_${PORT}.rdb
+export AOF_FILE_NAME=appendonly_${PORT}.aof
+export LOG_FILE_NAME=redis_${PORT}.log
+# Master 相关配置
+export MASTER_NODE_HOST=''
+export MASTER_NODE_PORT=${PORT}
+export MASTER_PASSWORD=1qaz@WSX
+# 哨兵设置
+export SENTINEL_PORT=26379
+
+
+# 如果保存用户配置的文件存在，则加载
+[[ -f "$USER_CONFIG_ENV_FILE" ]] && source "$USER_CONFIG_ENV_FILE"
+
+# 获取用户输入配置
+USER_CONFIG=$(dialog --stdout \
+    --title "Redis Configuration" \
+    --backtitle "Portable Redis Installer" \
+    --form "Please input the configuration of Portable Redis:" 30 72 23  \
+    "Redis Service Port:"      2   4   "$PORT"               2  25  38  0  \
+    "Work Directory:"          4   4   "$WORK_DIR"           4  25  38  0  \
+    "Password:"                6   4   "$PASSWORD"           6  25  38  0  \
+    "RDB File Name:"           8   4   "$RDB_FILE_NAME"      8  25  38  0 \
+    "AOF File Name:"          10   4   "$AOF_FILE_NAME"     10  25  38  0 \
+    "Log File Name:"          12   4   "$LOG_FILE_NAME"     12  25  38  0 \
+    "Master Node Host:"       15   4   "$MASTER_NODE_HOST"  15  25  38  0 \
+    "Master Node Port:"       17   4   "$MASTER_NODE_PORT"  17  25  38  0 \
+    "Master Password:"        19   4   "$MASTER_PASSWORD"   19  25  38  0 \
+    "Sentinel Password:"      21   4   "$SENTINEL_PORT"     21  25  38  0 \
+    ) || {
+        >&2 echo -e '\nOperation canceled.\n'
+        exit 1
+}
+
+# 将用户输入读取到数组
+mapfile -t USER_CONFIG_ARRAY <<< "$USER_CONFIG"
+
+# 将数组中的数据指定到环境变量
+PORT=${USER_CONFIG_ARRAY[0]}
+WORK_DIR=${USER_CONFIG_ARRAY[1]}
+PASSWORD=${USER_CONFIG_ARRAY[2]}
+RDB_FILE_NAME=${USER_CONFIG_ARRAY[3]}
+AOF_FILE_NAME=${USER_CONFIG_ARRAY[4]}
+LOG_FILE_NAME=${USER_CONFIG_ARRAY[5]}
+MASTER_NODE_HOST=${USER_CONFIG_ARRAY[6]}
+MASTER_NODE_PORT=${USER_CONFIG_ARRAY[7]}
+MASTER_PASSWORD=${USER_CONFIG_ARRAY[8]}
+SENTINEL_PORT=${USER_CONFIG_ARRAY[9]}
+
+# 将用户输入的值保存到文件
+envsubst < "$USER_CONFIG_ENV_FILE_TEMPLATE" > "$USER_CONFIG_ENV_FILE"
+
+
+REDIS_MASTER_CONFIG_TEMPLATE=$INSTALLER_DIR/files/template/redis_conf.tpl
+REDIS_SLAVE_CONFIG_TEMPLATE=$INSTALLER_DIR/files/template/redis_conf.tpl
+REDIS_SENTINEL_CONFIG_TEMPLATE=$INSTALLER_DIR/files/template/redis_sentinel_conf.tpl
+
+# 指定配置文件名
+REDIS_CONFIG_DIR=$REDIS_ROOT/conf
+REDIS_MASTER_CONFIG=$REDIS_CONFIG_DIR/redis_master.conf
+REDIS_SLAVE_CONFIG=$REDIS_CONFIG_DIR/redis_slave.conf
+REDIS_SENTINEL_CONFIG=$REDIS_CONFIG_DIR/redis_sentinel.conf
+
+# 生成配置
+mkdir -p "$REDIS_CONFIG_DIR"
+envsubst < "$REDIS_MASTER_CONFIG_TEMPLATE" > "$REDIS_MASTER_CONFIG"
+envsubst < "$REDIS_SLAVE_CONFIG_TEMPLATE" > "$REDIS_SLAVE_CONFIG"
+sed -i 's/### //g' "$REDIS_SLAVE_CONFIG"
+envsubst < "$REDIS_SENTINEL_CONFIG_TEMPLATE" > "$REDIS_SENTINEL_CONFIG"
+
+
+# 创建命令的 Symbolic Link
+chmod +x "$INSTALLER_DIR/files/rds_server.sh"
+ln -sfr "$INSTALLER_DIR/files/rds_server.sh" "$REDIS_ROOT/rdsmaster"
+ln -sfr "$INSTALLER_DIR/files/rds_server.sh" "$REDIS_ROOT/rdsslave"
+ln -sfr "$INSTALLER_DIR/files/rds_server.sh" "$REDIS_ROOT/rdssentinel"
+ln -sfr "$INSTALLER_DIR/files/rds_ps.sh" "$REDIS_ROOT/rdsps"
+
+
+print_comment () {
+    local msg=${1:-}
+    echo -ne "\033[2m${msg}\033[0m"
+}
+
+print_command () {
+    local msg=${1:-}
+    echo -ne "\033[1m\033[92m${msg}\033[0m"
+}
+
+echo -e '\n\n'
+echo 'Installation and configuration complete.'
+echo
+echo -e 'Please run the \033[1mFOLLOWING COMMAND\033[0m to run the \033[1mRedis\033[0m:'
+echo
+print_comment '  # Run Redis as master\n'
+print_command "  $REDIS_ROOT/rdsmaster\n"
+echo
+print_comment '  # Run Redis as slave\n'
+print_command "  $REDIS_ROOT/rdsslave\n"
+echo
+print_comment '  # Run Redis as rdssentinel\n'
+print_command "  $REDIS_ROOT/rdssentinel\n"
+echo
+print_comment '  # Show Redis processes\n'
+print_command "  $REDIS_ROOT/rdsps\n"
+echo
+# echo -e "Use the \033[1m--help\033[0m parameter to see details.\n"
+
+

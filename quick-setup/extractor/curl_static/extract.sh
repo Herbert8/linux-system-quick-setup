@@ -3,6 +3,8 @@
 # 参考 static-curl 编译
 # https://github.com/moparisthebest/static-curl
 
+# cURL 官网 https://curl.haxx.se
+# 下载 https://curl.haxx.se/download/curl-${CURL_VERSION}.tar.gz
 # 此脚本基于 Docker 运行，需要具备 Docker 环境
 
 set -eu
@@ -40,7 +42,7 @@ main() {
     rm -rf "${OUTPUT_PATH:?}"/*
 
     # curl 版本
-    CURL_VERSION='8.1.2'
+    CURL_VERSION='8.2.0'
     # CPU 架构
     ARCH=amd64
 

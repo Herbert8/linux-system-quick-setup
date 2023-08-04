@@ -185,6 +185,32 @@ create_alias_for_all_epel () {
     IFS=$ifs_bak
 }
 
+# 创建需要的别名
+create_custom_alias () {
+    # 为 curl8 指定别名，主要是指定证书
+    # alias curl8="'$TOOL_DIR/curl8' --cacert '$SCRIPT_DIR/ca-certificates.crt'"
+    # 通过环境变量指定证书文件
+    # 参考：https://curl.se/docs/sslcerts.html
+    alias curl8="CURL_CA_BUNDLE='$BASE_DIR/etc/ssl/certs/ca-certificates.crt' '$TOOL_DIR/curl8'"
+
+    alias lf="EDITOR=vim PAGER=bat '$TOOL_DIR/lf' -config '$BASE_DIR/etc/lf/lfrc'"
+}
+
+load_scripts () {
+    # 如果使用 Bash 则 加载配置脚本
+    if is_bash; then
+        source "$BASE_DIR/script/alias_function.sh"
+        source "$BASE_DIR/script/bash_prompt_style.sh" "$selected_network_device"
+        source "$BASE_DIR/etc/lf/lfcd.sh"
+    fi
+
+    # 配置 zoxide
+    eval "$("$TOOL_DIR/zoxide" init bash)"
+
+    # 配置 mcfly，ctrl+r 查看历史命令
+    # eval "$("$TOOL_DIR/mcfly" init bash)"
+}
+
 main () {
 
     # 准备相关目录
@@ -216,12 +242,8 @@ main () {
         fi
     fi
 
-
-    # 如果使用 Bash 则 加载配置脚本
-    if is_bash; then
-        source "$BASE_DIR/script/alias_function.sh"
-        source "$BASE_DIR/script/bash_prompt_style.sh" "$selected_network_device"
-    fi
+    # 加载脚本
+    load_scripts
 
 
     # 如果是 Fedora/CentOS/RHEL
@@ -238,11 +260,8 @@ main () {
     # 为所有 epel 的工具创建别名，通过别名运行时指定 LD_LIBRARY_PATH
     create_alias_for_all_epel
 
-    # 为 curl8 指定别名，主要是指定证书
-    # alias curl8="'$TOOL_DIR/curl8' --cacert '$SCRIPT_DIR/ca-certificates.crt'"
-    # 通过环境变量指定证书文件
-    # 参考：https://curl.se/docs/sslcerts.html
-    alias curl8="CURL_CA_BUNDLE='$SCRIPT_DIR/ca-certificates.crt' '$TOOL_DIR/curl8'"
+    # 创建自定义的 alias
+    create_custom_alias
 
     # 由于便携版 tmux 使用了自己的 LD_LIBRARY_PATH
     # 为避免对其子进程的影响，如果是在 tmux 环境下
@@ -250,12 +269,6 @@ main () {
     if [[ -n "$TMUX"  ]]; then
         unset LD_LIBRARY_PATH
     fi
-
-    # 配置 zoxide
-    eval "$("$TOOL_DIR/zoxide" init bash)"
-
-    # 配置 mcfly，ctrl+r 查看历史命令
-    # eval "$("$TOOL_DIR/mcfly" init bash)"
 
     # 创建一个以 IP 地址为名称的文件，里面存入日期
     write_ip_tag

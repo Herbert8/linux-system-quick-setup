@@ -55,11 +55,8 @@ prepare_dir () {
 
     # 工具目录
     TOOL_DIR=$TMP_DIR/tool
-    # 脚本目录
-    script_dir=$TMP_DIR/script
 
     mkdir -p "$TOOL_DIR"
-    mkdir -p "$script_dir"
 }
 
 extract_package () {
@@ -112,6 +109,31 @@ process_rpms () {
         fi
     }
 
+    local rpm_list=(
+        bc
+        dialog
+        hstr
+        htop
+        iperf
+        jq
+        lsof
+        multitail
+        net-tools
+        nmap
+        openssl
+        pigz
+        socat
+        tcpdump
+        telnet
+        the_silver_searcher
+        traceroute
+        tree
+        unzip
+        zip
+        zstd
+    )
+    readonly rpm_list
+
     local rpm_dir=${1:-'.'}
     local work_dir=$TMP_DIR/work
     local epel_tool_dir=$TOOL_DIR/epel
@@ -119,7 +141,9 @@ process_rpms () {
     # 遍历 rpm 包，解压缩到临时目录
     # 遍历方式：先遍历文件夹，再遍历文件夹中的 rpm 包。目的是把相同文件夹中的rpm包作为一组工具处理
     # 如果没有提供依赖库，则放到 standalone 工具目录中
-    find "$rpm_dir" -type d -name '*' | while read -r dir_item; do
+    # find "$rpm_dir" -type d -name '*' | while read -r dir_item; do
+    for rpm_name in "${rpm_list[@]}"; do
+        local dir_item=$rpm_dir/$rpm_name
         mkdir -p "$work_dir/usr/bin"
         mkdir -p "$work_dir/usr/sbin"
         find "$dir_item" -maxdepth 1 -type f -name '*.rpm' | while read -r rpm_item; do
@@ -163,7 +187,7 @@ package_files () {
     (
         echo 'Start packing files using tar ...'
         cd "$TMP_DIR" \
-            && gtar zcf "$tool_package_name" -- * | print_scroll_in_range 8 \
+            && gtar --exclude=.DS_Store -zcf "$tool_package_name" -- * | print_scroll_in_range 8 \
             && echo 'Packing files are completed.'
     )
 }
@@ -219,7 +243,7 @@ upload_to_server () {
 
 select_standalone_tool () {
     (
-        cd "$PROJECT_ROOT/all_components_superset/standalone_tools/standalone_tools" && \
+        cd "$PROJECT_ROOT/components/standalone_tools/standalone_tools" && \
             cp -v bandwhich \
                 7zz \
                 bat \
@@ -262,10 +286,7 @@ main () {
     select_standalone_tool | print_scroll_in_range 8
 
     # 复制脚本
-    cp -vR "$PROJECT_ROOT/components/config/files/alias_function.sh" \
-            "$PROJECT_ROOT/components/config/files/bash_prompt_style.sh" \
-            "$PROJECT_ROOT/components/config/files/ca-certificates.crt" \
-            "$script_dir"/ | print_scroll_in_range 8
+    cp -vR "$PROJECT_ROOT/components/accessory"/* "$TMP_DIR" | print_scroll_in_range 8
 
     # 处理 rpm 文件
     process_rpms "$PROJECT_ROOT/components/rpm/packages"
