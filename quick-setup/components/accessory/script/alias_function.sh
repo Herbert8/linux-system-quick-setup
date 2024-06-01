@@ -37,11 +37,20 @@ unproxy () {
 }
 
 whichex () {
-    readlink -f "$(which "$1")"
+    local which_file
+    if which_file=$(which "$1") && [[ -f "$which_file" ]] ; then
+        readlink -f "$which_file"
+    else
+        >&2 echo "$which_file"
+        return 1
+    fi
 }
 
 llex () {
-    ls -alp --time-style=long-iso --group-directories-first --color=auto "$(readlink -f "$(which "$1")")"
+    local which_file
+    if which_file=$(whichex "$1"); then
+        ls -alp --time-style=long-iso --group-directories-first --color=auto "$which_file"
+    fi
 }
 
 # 进入文件所在目录

@@ -116,4 +116,6 @@ let NERDTreeWinSize=31
 map <F10> :NERDTreeMirror<CR>
 map <F10> :NERDTreeToggle<CR>
 
-
+" 打开 Vim 时启动 NERDTree，并自动将焦点切换到编辑器窗口
+" autocmd VimEnter * if !argc() | NERDTree | wincmd p | endif
+autocmd VimEnter * wincmd p

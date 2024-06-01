@@ -42,7 +42,7 @@ main() {
     rm -rf "${OUTPUT_PATH:?}"/*
 
     # curl 版本
-    CURL_VERSION='8.2.0'
+    CURL_VERSION='8.4.0'
     # CPU 架构
     ARCH=amd64
 

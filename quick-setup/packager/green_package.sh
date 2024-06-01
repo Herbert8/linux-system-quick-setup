@@ -263,12 +263,14 @@ select_standalone_tool () {
                 hexyl \
                 httpbingo \
                 lf \
+                lnav \
                 mcfly \
                 ncdu \
                 procs \
                 rg \
                 websocat \
                 yq \
+                zellij \
                 zoxide \
                 "$TOOL_DIR"/
     )

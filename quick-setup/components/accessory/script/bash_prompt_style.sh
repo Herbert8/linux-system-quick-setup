@@ -63,22 +63,22 @@ PROMPT_NETWORK_INTERFACE=${1:-''}
 # 颜色相关 API ******************************************************************
 
 # 重置颜色设置
-print_color_reset () {
+print_color_reset() {
     echo -ne "\033[0m"
 }
 
 # 使用指定颜色打印文字
 # 颜色值通过前面的参数指定，最后一个参数指定输入文字
-print_color () {
+print_color() {
     for color in "$@"; do
         echo -ne "\033[${color}m"
     done
 }
 
 # 生成彩色文本
-sprint_colored_text () {
+sprint_colored_text() {
     local attrs=''
-    [[ "$#" -gt "1" ]] && for (( i=2;i<=$#;i++ )); do
+    [[ "$#" -gt "1" ]] && for ((i = 2; i <= $#; i++)); do
         attrs=${attrs}${!i}';'
     done
     attrs=${attrs%;}
@@ -88,20 +88,20 @@ sprint_colored_text () {
 export -f sprint_colored_text
 
 # 打印彩色文本
-print_colored_text () {
+print_colored_text() {
     echo -ne "$(sprint_colored_text "$@")"
 }
 export -f print_colored_text
 
 # 打印彩色文本后换行
-println_colored_text () {
+println_colored_text() {
     print_colored_text "$@"
     echo
 }
 export -f println_colored_text
 
 # 定义表示各个部分的值和颜色 *******************************************************
-prompt_user () {
+prompt_user() {
     if [[ "$PRODUCTION_ENV" == true ]]; then
         print_colored_text '\u' $COLOR_F_GREEN
     else
@@ -109,23 +109,29 @@ prompt_user () {
     fi
 }
 
-prompt_at () {
+prompt_at() {
     print_colored_text '@'
 }
 
-prompt_host () {
+prompt_host() {
     print_colored_text '\H' $COLOR_F_CYAN $TEXT_BOLD_BRIGHT
 }
 
+detect_network_intf() {
+    ip route show default | grep 'default' | awk '{ print $5 }'
+}
+
 # 获取 IP 的命令
-get_ip_addr () {
-    if [[ -x '/usr/sbin/ip' ]]; then
+get_ip_addr() {
+    local network_intf=${PROMPT_NETWORK_INTERFACE}
+    if command -v ip >/dev/null; then
+        network_intf=${network_intf:-$(detect_network_intf)}
         local local_ip
         # 如果没有指定设备则自动检测
-        if [[ -z "${PROMPT_NETWORK_INTERFACE}" ]]; then
-            local_ip=$(/usr/sbin/ip address show | sed -nr 's/.*inet (a)?(([0-9]*\.){3}[0-9].*) brd.*noprefixroute.*/\2/p')
+        if [[ -z "${network_intf}" ]]; then
+            local_ip=$(ip address show | sed -nr 's/.*inet (a)?(([0-9]*\.){3}[0-9].*) brd.*noprefixroute.*/\2/p')
         else # 指定了设备就读取指定设备
-            local_ip=$(/usr/sbin/ip address show "${PROMPT_NETWORK_INTERFACE}" | sed -nr 's/.*inet (addr:)?(([0-9]*\.){3}[0-9].*) brd.*/\2/p')
+            local_ip=$(ip address show "${network_intf}" | sed -nr 's/.*inet (addr:)?(([0-9]*\.){3}[0-9].*) brd.*/\2/p')
         fi
         # 清理换行符
         local_ip=${local_ip/$'\n'/ }
@@ -135,43 +141,43 @@ get_ip_addr () {
     fi
 }
 
-prompt_ip_addr () {
+prompt_ip_addr() {
     print_colored_text "[$(get_ip_addr)]" $COLOR_F_CYAN $TEXT_BOLD_BRIGHT
 }
 
-prompt_colon () {
+prompt_colon() {
     print_colored_text ':'
 }
 
-prompt_current_path () {
+prompt_current_path() {
     print_colored_text '\w' $COLOR_F_YELLOW $TEXT_BOLD_BRIGHT
 }
 
 # 获取日期的命令
-get_date_time () { date "+%Y-%m-%d %H:%M:%S %z"; }
+get_date_time() { date "+%Y-%m-%d %H:%M:%S %z"; }
 
-prompt_date_time () {
+prompt_date_time() {
     print_colored_text "$(get_date_time)" $COLOR_F_DEFAULT $TEXT_DIM
 }
 
 # 获取代理设置
-prompt_http_proxy () {
+prompt_http_proxy() {
     print_colored_text "${http_proxy-}" $COLOR_F_CYAN $TEXT_DIM
 }
 
-prompt_https_proxy () {
+prompt_https_proxy() {
     print_colored_text "${https_proxy-}" $COLOR_F_YELLOW $TEXT_DIM
 }
 
-prompt_all_proxy () {
+prompt_all_proxy() {
     print_colored_text "${all_proxy-}" $COLOR_F_BLUE $TEXT_DIM
 }
 
-prompt_char () {
+prompt_char() {
     print_colored_text '\n\$ '
 }
 
-prompt_prod_tag () {
+prompt_prod_tag() {
     if [[ "$PRODUCTION_ENV" == true ]]; then
         print_colored_text '[' $COLOR_F_LIGHT_YELLOW $TEXT_BOLD_BRIGHT
         print_colored_text '=PRODUCTION=' $COLOR_F_LIGHT_RED $TEXT_BOLD_BRIGHT
@@ -182,9 +188,30 @@ prompt_prod_tag () {
     fi
 }
 
-PRODUCTION_ENV=false
+main() {
 
-# 设置提示风格
-PS1="$(prompt_prod_tag)$(prompt_user)$(prompt_at)$(prompt_host)$(prompt_ip_addr)$(prompt_colon)$(prompt_current_path) \$(prompt_date_time) \$(prompt_http_proxy) \$(prompt_https_proxy) \$(prompt_all_proxy)$(prompt_char)"
+    PROMPT_NETWORK_INTERFACE=''
 
+    # Parse options
+    while getopts "i:" opt; do
+        case ${opt} in
+        'i')
+            PROMPT_NETWORK_INTERFACE=$OPTARG
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG" 1>&2
+            usage
+            ;;
+        :)
+            echo "Option -$OPTARG requires an argument." 1>&2
+            usage
+            ;;
+        esac
+    done
 
+    PRODUCTION_ENV=false
+    # 设置提示风格
+    PS1="$(prompt_prod_tag)$(prompt_user)$(prompt_at)$(prompt_host)$(prompt_ip_addr)$(prompt_colon)$(prompt_current_path) \$(prompt_date_time) \$(prompt_http_proxy) \$(prompt_https_proxy) \$(prompt_all_proxy)$(prompt_char)"
+}
+
+main "$@"

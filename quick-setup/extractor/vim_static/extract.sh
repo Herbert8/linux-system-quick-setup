@@ -7,26 +7,35 @@
 
 set -eu
 
-
-install_package () {
+install_package() {
     local package_url=${1:-}
     local folder_name=${2:-tmppkg}
     local tmp_dir
     tmp_dir=$(mktemp -d)
-    local target_dir=$OUTPUT_PATH/vim/share/vim/vim90/pack/vendor/start/$folder_name
+    local target_dir
+    target_dir=$OUTPUT_PATH/vim/share/vim/$(get_vim_path_component)/pack/vendor/start/$folder_name
     mkdir -p "$target_dir"
     if http_proxy="$PROXY_SERVER" https_proxy="$PROXY_SERVER" git clone "$package_url" "$tmp_dir"; then
         cp -vR "$tmp_dir"/* "$target_dir"/
     else
-        >&2 echo 'Error: Fetch NERDTree fail.'
+        echo >&2 'Error: Fetch NERDTree fail.'
     fi
     rm -rf "$tmp_dir"
 }
 
-get_latest_tag () {
+get_latest_tag() {
     local rest_ret
     rest_ret=$(curl -sSLf https://api.github.com/repos/vim/vim/tags)
     echo "$rest_ret" | grep name | head -n1 | sed -nr 's/.*: "(.*)".*/\1/p'
+}
+
+get_ip_addr() {
+    ifconfig en0 | sed -nr 's/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p' | head -n1
+}
+
+get_vim_path_component() {
+    local vim_path_name=${VIM_VERSION//./}
+    echo "vim${vim_path_name:1:2}"
 }
 
 main() {
@@ -43,7 +52,7 @@ main() {
     # vim 版本
     # VIM_VERSION='v9.0.1670'
     if ! VIM_VERSION=$(get_latest_tag); then
-        >&2 echo Get latest tag error.
+        echo >&2 Get latest tag error.
         exit 1
     fi
 
@@ -52,13 +61,16 @@ main() {
 
     # 下载的 vim 源码包
     VIM_SRC_ARCHIVE=$VIM_VERSION.tar.gz
-    VIM_FULL_TARGET_ARCHIVE=vim_full_$VIM_VERSION.tar
-    VIM_LITE_TARGET_ARCHIVE=vim_lite_$VIM_VERSION.tar
+
+    local timestamp
+    timestamp=$(date '+%Y%m%d_%H%M%S')
+    VIM_FULL_TARGET_ARCHIVE=vim_full_$VIM_VERSION-$timestamp.tar
+    VIM_LITE_TARGET_ARCHIVE=vim_lite_$VIM_VERSION-$timestamp.tar
 
     # 下载
     # GitHub 仓库位置：https://github.com/vim/vim
     # 下载位置： https://github.com/vim/vim/archive/版本.tar.gz"
-    PROXY_SERVER=http://192.168.50.100:8888
+    PROXY_SERVER=http://$(get_ip_addr):8888
     SOURCE_CODE_URL=https://github.com/vim/vim/archive/${VIM_SRC_ARCHIVE}
     echo "Downloading source from [$SOURCE_CODE_URL]"
     cd "$OUTPUT_PATH" && curl -x "$PROXY_SERVER" -fOL "$SOURCE_CODE_URL"
@@ -68,19 +80,19 @@ main() {
     local img_tag='latest'
     # 如果没有找到则进行镜像构建
     if ! docker images | grep "^${img_name}\s*${img_tag}\s*"; then
-        docker build \
-        --build-arg http_proxy=$PROXY_SERVER \
-        --build-arg https_proxy=$PROXY_SERVER \
-        -t "${img_name}:${img_tag}" - << EOF
+        docker build --platform 'linux/amd64' \
+            --build-arg http_proxy="$PROXY_SERVER" \
+            --build-arg https_proxy="$PROXY_SERVER" \
+            -t "${img_name}:${img_tag}" - <<EOF
 FROM alpine:latest
 RUN apk add gcc make musl-dev ncurses-static
 EOF
     fi
 
     # 在 Docker 中编译 vim
-    docker run -i --rm \
-        -e http_proxy=$PROXY_SERVER \
-        -e https_proxy=$PROXY_SERVER \
+    docker run -i --rm --platform 'linux/amd64' \
+        -e http_proxy="$PROXY_SERVER" \
+        -e https_proxy="$PROXY_SERVER" \
         -v "$OUTPUT_PATH":/out \
         -w /vimbuildcache "${img_name}:${img_tag}" /bin/sh <<EOF
         mv /out/* ./
@@ -112,7 +124,7 @@ EOF
 EOF
 
     # 生成版本信息
-    echo "$VIM_VERSION" > "$OUTPUT_PATH/vim/VERSION"
+    echo "$VIM_VERSION" >"$OUTPUT_PATH/vim/VERSION"
 
     echo 'Installing NERDTree...'
     echo
@@ -127,18 +139,20 @@ EOF
 
     # 整理 Lite 版本
     cp "$OUTPUT_PATH/$VIM_FULL_TARGET_ARCHIVE" "$OUTPUT_PATH/$VIM_LITE_TARGET_ARCHIVE"
-    gtar --delete 'share/vim/vim90/doc' \
-        --delete 'share/vim/vim90/spell' \
-        --delete 'share/vim/vim90/tutor' \
+    local vim_path_name
+    vim_path_name=$(get_vim_path_component)
+    gtar --delete "share/vim/$vim_path_name/doc" \
+        --delete "share/vim/$vim_path_name/spell" \
+        --delete "share/vim/$vim_path_name/tutor" \
         -vf "$OUTPUT_PATH/$VIM_LITE_TARGET_ARCHIVE"
 
     # 以下内容也可以删掉，但对精简空间影响不大，还会影响插件使用，所以不再删除，放在这里备忘
-    #  --delete 'share/vim/vim90/ftplugin' \
-    #  --delete 'share/vim/vim90/pack' \
-    #  --delete 'share/vim/vim90/compiler' \
-    #  --delete 'share/vim/vim90/tools' \
-    #  --delete 'share/vim/vim90/print' \
-    #  --delete 'share/vim/vim90/plugin' \
+    #  --delete "share/vim/$vim_path_name/ftplugin" \
+    #  --delete "share/vim/$vim_path_name/pack" \
+    #  --delete "share/vim/$vim_path_name/compiler" \
+    #  --delete "share/vim/$vim_path_name/tools" \
+    #  --delete "share/vim/$vim_path_name/print" \
+    #  --delete "share/vim/$vim_path_name/plugin" \
 
     # 压缩
     gzip "$OUTPUT_PATH/$VIM_FULL_TARGET_ARCHIVE"
@@ -152,4 +166,3 @@ EOF
 }
 
 main "$@"
-
