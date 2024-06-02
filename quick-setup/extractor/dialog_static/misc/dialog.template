@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# 检测工具是否存在，如果存在则指定 TUI_TOOL
+check_tool() {
+    local tool=${1:-}
+    command -v "$tool" >/dev/null && TUI_TOOL=$tool
+}
+
+# 获取可用的 dialog 工具：
+# 1、如果 TUI_TOOL 指定为 portable_dialog 则使用内置的 dialog
+# 2、如果 TUI_TOOL 指定为 autodetect/detect 则 自动检测
+#   2.1 如果没有指定，则 检测环境自身的 dialog 和 whiptail
+#   2.2 如果没有检测到则使用便携版
+# 3、如果指定了其他 dialog 工具则直接使用
+get_tui_tool() {
+    # 如果指定了 portable_dialog 则准备便携版并使用
+    if [[ "$TUI_TOOL" == 'portable_dialog' ]]; then
+        prepare_dialog
+        return
+    fi
+    # 指定了自动检测则 按顺序进行检测，检测不到则使用 portable_dialog
+    if [[ "$TUI_TOOL" == 'autodetect' || "$TUI_TOOL" == 'detect' ]]; then
+        check_tool "dialog" && return
+        check_tool "whiptail" && return
+        prepare_dialog
+        return
+    fi
+    [[ -n "$TUI_TOOL" ]] && return
+}
+
+# 准备对话框
+# 将内置的 dialog 工具输出到磁盘，并富裕可执行权限
+# 同时指定 TUI_TOOL 为输出的 dialog
+prepare_dialog() {
+    DIALOG_PATH=$(mktemp) &&
+        base64 -d <<<"$DIALOG_DATA" >"$DIALOG_PATH" &&
+        chmod +x "$DIALOG_PATH" &&
+        TUI_TOOL=$DIALOG_PATH
+}
+
+log() {
+    local timestamp
+    timestamp=$(gdate '+%Y-%m-%d %H:%M:%S.%3N %z')
+    echo -e "\033[1;92m[$timestamp] [${FUNCNAME[1]}:${BASH_LINENO[0]}]\033[0m" "$@" >&2
+}
+
+run_dialog() {
+    # 默认指定使用 portable_dialog
+    TUI_TOOL=${TUI_TOOL:-portable_dialog}
+    SHOW_TUI_TOOL=${SHOW_TUI_TOOL:-'0'}
+    get_tui_tool && {
+        local ret_code
+        # "$TUI_TOOL" "$@" 3>&1 1>&2 2>&3
+        if [[ "$SHOW_TUI_TOOL" == '1' ]]; then
+            log "Use TUI_TOOL as [$TUI_TOOL]"
+            return 1
+        fi
+        "$TUI_TOOL" "$@"
+        ret_code=$?
+        rm -rf "$DIALOG_PATH"
+        return $ret_code
+    }
+}
+
+readonly DIALOG_DATA='
+<DIALOG_BASE64_DATA>
+'
+
+run_dialog "$@"
