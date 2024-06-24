@@ -57,17 +57,28 @@ main() {
     local img_tag='latest'
     # 如果没有找到则进行镜像构建
     if ! docker images | grep "^${img_name}\s*${img_tag}\s*"; then
+        # 如果对时区有要求，需要 apk add tzdata 安装组件支持
+        # 可以通过以下方式修改镜像设置
+            # rm -f /etc/localtime && \
+            # ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+            # echo "Asia/Shanghai" > /etc/timezone
+        # 为了简便，也可以在运行时指定 TZ 环境变量解决
         docker build --platform 'linux/amd64' \
             --build-arg http_proxy="$PROXY_SERVER" \
             --build-arg https_proxy="$PROXY_SERVER" \
             -t "${img_name}:${img_tag}" - <<EOF
 FROM alpine:latest
-RUN apk add autoconf build-base gcc gettext make musl-dev ncurses-dev ncurses-static libmaxminddb-dev libmaxminddb-static
+RUN apk add autoconf build-base gcc gettext make musl-dev ncurses-dev ncurses-static libmaxminddb-dev libmaxminddb-static tzdata
 EOF
     fi
 
-    # 在 Docker 中编译 dialog
+
+
+    # 在 Docker 中编译
+    # 注意下，编译时如果需要时间信息，注意指定时区。可以通过 -e TZ=Asia/Shanghai 指定
+    # 但同时必须通过 apk add tzdata 安装组件支持。这个在构建镜像时执行
     docker run -i --rm --platform 'linux/amd64' \
+        -e TZ=Asia/Shanghai \
         -e http_proxy="$PROXY_SERVER" \
         -e https_proxy="$PROXY_SERVER" \
         -v "$OUTPUT_PATH":/out \
