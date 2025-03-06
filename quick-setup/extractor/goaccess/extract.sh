@@ -22,7 +22,7 @@ prepare_dir() {
     readonly PROJECT_ROOT=$THIS_SCRIPT_DIR
 
     # 清理输出目录
-    OUTPUT_PATH=$THIS_SCRIPT_DIR/out
+    OUTPUT_PATH=$THIS_SCRIPT_DIR/out/$PLATFORM
     readonly OUTPUT_PATH
     mkdir -p "$OUTPUT_PATH"
     rm -rf "${OUTPUT_PATH:?}"/*
