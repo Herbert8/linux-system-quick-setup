@@ -21,20 +21,46 @@ mount_rhel_disc () {
     echo "mount: /dev/cdrom -> $media_path"
 }
 
-ssproxy () {
-    local server_http_proxy='http://192.168.100.1:8888';
-    local server_sock5h_proxy='socks5h://192.168.100.1:8889';
-    export http_proxy=$server_http_proxy;
-    export https_proxy=$server_http_proxy;
-    export all_proxy=$server_sock5h_proxy;
-    export no_proxy='192.168.*.*,127.0.0.1,localhost,0.0.0.0';
+use_ladder() {
+
+    # 判断是否在 Docker 容器中
+    inside_container() {
+        test -f '/.dockerenv'
+    }
+
+    # 判断是否在 OrbStack 的 VM 中
+    inside_orb_vm() {
+        dmesg | grep -qi "orbstack"
+    }
+
+    local proxy_server=${1:-''}
+    if [[ -z "$proxy_server" ]]; then
+        # proxy_server=$(get_ip_addr '') || proxy_server=${1:-'127.0.0.1'}
+        # 判断是否在 Docker 容器中
+        if inside_container; then
+            proxy_server=host.docker.internal
+        elif inside_orb_vm; then
+            proxy_server=host.orb.internal
+        else
+            proxy_server=127.0.0.1
+        fi
+    fi
+    local http_proxy_port=${2:-'8888'}
+    local https_proxy_port=${3:-'8888'}
+    local all_proxy_port=${4:-'8889'}
+    export http_proxy="http://$proxy_server:$http_proxy_port"
+    export https_proxy="http://$proxy_server:$https_proxy_port"
+    export all_proxy="socks5h://$proxy_server:$all_proxy_port"
+    export no_proxy='192.168.*.*,127.0.0.1,localhost,0.0.0.0'
 }
 
-unproxy () {
-    unset http_proxy;
-    unset https_proxy;
-    unset all_proxy;
+unuse_ladder() {
+    unset http_proxy
+    unset https_proxy
+    unset all_proxy
 }
+
+
 
 whichex () {
     local which_file

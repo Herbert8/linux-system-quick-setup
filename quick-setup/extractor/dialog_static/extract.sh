@@ -54,6 +54,20 @@ get_dialog_version_name() {
 
 main() {
 
+    PLATFORM=${1:-'aarch64'}
+    readonly PLATFORM
+
+    if [[ "$PLATFORM" = 'aarch64' ]]; then
+        DOCKER_PLATFORM='linux/arm64'
+    elif [[ "$PLATFORM" = 'x86_64' ]]; then
+        DOCKER_PLATFORM='linux/amd64'
+    else
+        echo >&2 "Unknown platform '$PLATFORM'. Must be 'aarch64' or 'x86_64'."
+        exit 1
+    fi
+
+    readonly DOCKER_PLATFORM
+
     prepare_dir
 
     local timestamp
@@ -70,11 +84,11 @@ main() {
     name_version=$(get_dialog_version_name "$source_pkg")
 
     # 查找用于构建 dialog 的镜像
-    local img_name='dialog-build-env'
+    local img_name="dialog-${PLATFORM}-build-env"
     local img_tag='latest'
     # 如果没有找到则进行镜像构建
     if ! docker images | grep "^${img_name}\s*${img_tag}\s*"; then
-        docker build --platform 'linux/amd64' \
+        docker build --platform="$DOCKER_PLATFORM" \
             --build-arg http_proxy="$PROXY_SERVER" \
             --build-arg https_proxy="$PROXY_SERVER" \
             -t "${img_name}:${img_tag}" - <<EOF
@@ -84,11 +98,11 @@ EOF
     fi
 
     # 在 Docker 中编译 dialog
-    docker run -i --rm --platform 'linux/amd64' \
+    docker run -i --rm --platform="$DOCKER_PLATFORM" \
         -e http_proxy="$PROXY_SERVER" \
         -e https_proxy="$PROXY_SERVER" \
         -v "$OUTPUT_PATH":/out \
-        -w /buildcache "${img_name}:${img_tag}" /bin/sh <<EOF
+        -w /buildcache "${img_name}:${img_tag}" /bin/sh <<'EOF'
         mv /out/* ./
         apk add gcc make musl-dev ncurses-static build-base musl-dev ncurses-dev
         tar xvfz *.tar.gz
@@ -112,8 +126,9 @@ EOF
             # --with-tlib=ncursesw
         make
         make install
-        cp /usr/local/bin/dialog /out/
-        strip /usr/local/bin/dialog -o /out/dialog_striped
+        platform=$(uname -m)
+        cp /usr/local/bin/dialog "/out/dialog_${platform}"
+        strip /usr/local/bin/dialog -o "/out/dialog_${platform}_striped"
         cp VERSION /out/
         # cd /out && tar --remove-files -zcvf dialog.tar.gz
         # mkdir -p /out/dialog
@@ -124,7 +139,7 @@ EOF
 EOF
 
     local dlg_script_template=$PROJECT_ROOT/misc/dialog.template
-    gbase64 <"$OUTPUT_PATH/dialog_striped" |
+    gbase64 <"$OUTPUT_PATH/dialog_${PLATFORM}_striped" |
         replace_content "$dlg_script_template" '<DIALOG_BASE64_DATA>' \
             >"$OUTPUT_PATH/dialog_wrapper.sh"
 
@@ -133,7 +148,7 @@ EOF
             gtar zcvf "${name_version}.tar.gz" *
     )
 
-    exa -Fghl --time-style=long-iso --group-directories-first --color-scale "$OUTPUT_PATH"
+    eza -ghlF --time-style=long-iso --group-directories-first --color-scale "$OUTPUT_PATH"
 
     echo -e "Extract '$name_version' completed.\nSource code location: $SOURCE_CODE_URL"
 
